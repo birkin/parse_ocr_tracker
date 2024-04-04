@@ -1,26 +1,27 @@
-use std::path::Path;
-use walkdir::WalkDir;
+// use std::path::Path;
+// use walkdir::WalkDir;
 
 use clap::{arg, Command};
 
-fn find_json_files<P: AsRef<Path>>(path: P) {
-    for entry in WalkDir::new(path)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_file() && e.path().extension().unwrap_or_default() == "json")
-    {
-        println!("{}", entry.path().display());
-    }
-}
+// fn find_json_files<P: AsRef<Path>>(path: P) {
+//     for entry in WalkDir::new(path)
+//         .into_iter()
+//         .filter_map(|e| e.ok())
+//         .filter(|e| e.path().is_file() && e.path().extension().unwrap_or_default() == "json")
+//     {
+//         println!("{}", entry.path().display());
+//     }
+// }
 
 fn main() {
     // get args
     let matches = Command::new("MyApp")
-        .version("1.0")
+        .version("1.0z")
         .about("Does awesome things")
         // .arg(arg!(--two <VALUE>).required(true))
-        .arg(arg!(--one <VALUE>).required(true))
-        .arg(arg!(--two <VALUE>).required(true))
+        // .arg(arg!(--one <VALUE>).required(true))
+        .arg(arg!(-o --one <VALUE>).required(true)) 
+        .arg(arg!(-t --two <VALUE>).required(true))
         .get_matches();
 
     println!(
@@ -33,7 +34,7 @@ fn main() {
     );
 
     // Replace "path/to/directory" with the actual path you want to search.
-    find_json_files("./");
+    // find_json_files("./");
 }
 
 // fn main() {
