@@ -1,8 +1,7 @@
-use walkdir::WalkDir;
 use std::path::Path;
+use walkdir::WalkDir;
 
 use clap::{arg, Command};
-
 
 fn find_json_files<P: AsRef<Path>>(path: P) {
     for entry in WalkDir::new(path)
@@ -32,12 +31,9 @@ fn main() {
         matches.get_one::<String>("one").expect("required")
     );
 
-
-
     // Replace "path/to/directory" with the actual path you want to search.
     find_json_files("./");
 }
-
 
 // fn main() {
 //     println!("Hello, world!");
