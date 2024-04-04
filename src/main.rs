@@ -17,7 +17,7 @@ fn main() {
     // get args -----------------------------------------------------
     let matches = Command::new("MyApp")
         .version("1.0z")
-        .about("Does awesome things")
+        .about("Walks source_dir_path and lists all json files.")
         .arg(arg!(-s --source_dir_path <VALUE>).required(true)) 
         .arg(arg!(-t --output_dir_path <VALUE>).required(true))
         .get_matches();
