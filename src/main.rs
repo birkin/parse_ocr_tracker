@@ -14,23 +14,21 @@ use clap::{arg, Command};
 // }
 
 fn main() {
-    // get args
+    // get args -----------------------------------------------------
     let matches = Command::new("MyApp")
         .version("1.0z")
         .about("Does awesome things")
-        // .arg(arg!(--two <VALUE>).required(true))
-        // .arg(arg!(--one <VALUE>).required(true))
-        .arg(arg!(-o --one <VALUE>).required(true)) 
-        .arg(arg!(-t --two <VALUE>).required(true))
+        .arg(arg!(-s --source_dir_path <VALUE>).required(true)) 
+        .arg(arg!(-t --output_dir_path <VALUE>).required(true))
         .get_matches();
 
     println!(
-        "one: {:?}",
-        matches.get_one::<String>("one").expect("required")
+        "source-arg: {:?}",
+        matches.get_one::<String>("source_dir_path").expect("required")
     );
     println!(
-        "two: {:?}",
-        matches.get_one::<String>("two").expect("required")
+        "output-arg: {:?}",
+        matches.get_one::<String>("output_dir_path").expect("required")
     );
 
     // Replace "path/to/directory" with the actual path you want to search.
