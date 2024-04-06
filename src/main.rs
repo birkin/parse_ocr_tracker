@@ -21,7 +21,7 @@ fn find_json_files<P: AsRef<Path>>(path: P) {
 
 fn main() {
     // get args -----------------------------------------------------
-    let matches = Command::new("MyApp")
+    let matches = Command::new("parse_ocr_tracker")
         // .version("1.0z")
         .version(GIT_COMMIT)
         .about("Walks source_dir_path and lists all json files.")
