@@ -41,7 +41,7 @@ fn main() {
     let output_dir: &str = output_dir_temp_ref.as_str();
     println!("output-arg: {:?}", output_dir);
     // call worker function -----------------------------------------
-    find_json_files("./");
+    find_json_files( source_dir );
 }
 
 // let zz: () = the_var;
