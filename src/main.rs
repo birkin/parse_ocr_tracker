@@ -8,10 +8,8 @@ use walkdir::WalkDir;
 */
 include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo; is the target dir; and is only available during build process
 
-// fn find_json_files<P: AsRef<Path>>(path: P) {
 fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
     let mut paths = Vec::new();
-
     for entry in WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -19,7 +17,6 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
     {
         paths.push(entry.into_path());
     }
-
     println!("paths: {:?}", paths);
     paths
 }
