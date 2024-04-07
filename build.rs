@@ -16,7 +16,7 @@ fn main() {
     let version_string: String = format!("version-{}", git_hash);
 
     // create file to be included in binary -------------------------
-    let out_dir: String = env::var("OUT_DIR").expect("Failed to read OUT_DIR environment variable");  // OUT_DIR is a cargo environment variable that points to the target directory, and is only available during the build process
+    let out_dir: String = env::var("OUT_DIR").expect("Failed to read OUT_DIR environment variable"); // OUT_DIR is a cargo environment variable that points to the target directory, and is only available during the build process
     let dest_path = Path::new(&out_dir).join("git_commit.rs");
     let mut f = File::create(&dest_path).expect("failed to create git_commit.rs file");
 
