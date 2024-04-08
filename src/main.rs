@@ -46,7 +46,7 @@ fn main() {
         .expect("Failed to get required 'output_dir_path' argument.");
     let output_dir: &str = output_dir_temp_ref.as_str();
     println!("output-arg: {:?}", output_dir);
-    // call worker function -----------------------------------------
+    // get paths ----------------------------------------------------
     find_json_files(source_dir);
 }
 
