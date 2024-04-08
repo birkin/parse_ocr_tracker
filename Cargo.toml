@@ -10,3 +10,4 @@ build = "build.rs"
 [dependencies]
 clap = "4.5.4"
 walkdir = "2.5.0"
+serde = "1.0.197"

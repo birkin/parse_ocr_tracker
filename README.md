@@ -35,6 +35,9 @@ for binary:
     - see if there's a corresponding ingestion-complete json file
     - open that file if it exists and grab the pid
     - saved it to a storage-array
-    - if the len of the storage-array is 100 things, append the data to a csv file
+    
+- if the len of the storage-array is 100 things, append the data to a csv file
+
+- maybe output another summary.json file to the output-dir.
 
 ---
