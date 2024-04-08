@@ -17,7 +17,11 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
     {
         paths.push(entry.into_path());
     }
-    println!("paths: {:?}", paths);
+    paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));  // sort uses `cmp` for safe comparison without assuming UTF-8 encoding.
+    for path in &paths {  // pretty-print each path
+        println!("{}", path.display());
+    }
+    println!("len-paths: {}", paths.len());
     paths
 }
 
