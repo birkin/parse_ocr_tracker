@@ -1,5 +1,11 @@
 use clap::{arg, Command};
-use std::path::{Path, PathBuf};
+use serde::Deserialize;
+use serde_json::Result as JsonResult;
+use std::{
+    fs::File,
+    io::{self, Read},
+    path::{Path, PathBuf},
+};
 use walkdir::WalkDir;
 
 /*
