@@ -34,7 +34,9 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
 
 
 // fn find_specific_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
-fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
+// fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
+fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
+
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
 
@@ -61,8 +63,8 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
     println!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
     println!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
 
-    // (ocr_complete_paths, ingest_complete_paths)
-    ocr_complete_paths
+    (ocr_complete_paths, ingest_complete_paths)
+    // ocr_complete_paths
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -149,14 +151,18 @@ fn main() {
     println!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    let paths_vector: Vec<PathBuf> = find_json_files(source_dir);
-    for path in &paths_vector {
+    // let paths_vector: Vec<PathBuf> = find_json_files(source_dir);
+    let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
+    for path in &ocr_paths {
         // pretty-print each path
         println!("{}", path.display());
     }
 
+    // make a map of id-to-pid --------------------------------------
+    
+
     // process files ------------------------------------------------
-    if let Err(e) = process_files(paths_vector, &output_dir) {
+    if let Err(e) = process_files(ocr_paths, &output_dir) {
         eprintln!("Error processing files: {}", e);
     }
 }
