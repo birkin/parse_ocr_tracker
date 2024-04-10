@@ -4,7 +4,7 @@ use serde_json::Result as JsonResult;
 use std::{
     fs::File,
     io::{self, Read},
-    path::{self, Path, PathBuf},
+    path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
 
