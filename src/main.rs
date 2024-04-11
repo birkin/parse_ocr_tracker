@@ -22,9 +22,11 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
     Finds all files in the given directory that end with "ocr_complete.json" or "ingest_complete.json".
     -----------------------------------------------------------------
 */
-fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
+fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
+    let mut error_paths = Vec::new();
+    let mut other_paths = Vec::new();
 
     for entry in WalkDir::new(path)
         .into_iter()
@@ -37,9 +39,10 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
                 ocr_complete_paths.push(path);
             } else if file_name.ends_with("ingest_complete.json") {
                 ingest_complete_paths.push(path);
+            } else if file_name.contains("error") {
+                error_paths.push(path);
             } else {
-                // log_debug!("zIgnoring file: {}", file_name);
-                log_debug!("vIgnoring file: {}", file_name);
+                other_paths.push(path);
             }
         }
     }
@@ -47,10 +50,12 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
     ocr_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
     ingest_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
 
-    log_debug!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
-    log_debug!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
+    log_info!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
+    log_info!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
+    log_info!("len-error_paths: {}", error_paths.len());
+    log_info!("len-other_paths: {}", other_paths.len());
 
-    (ocr_complete_paths, ingest_complete_paths)
+    (ocr_complete_paths, ingest_complete_paths, error_paths, other_paths)
 }
 
 /*  -----------------------------------------------------------------
@@ -72,6 +77,65 @@ struct Record {
     below_30: f64,
     pid: Option<String>,
     pid_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct IdToPidInfo {
+    id: Option<String>,
+    pid: String,
+}
+
+/*  -----------------------------------------------------------------
+    Parses the key from the path.
+    -----------------------------------------------------------------
+*/
+fn parse_key_from_path(path: &Path) -> String {
+    /*
+    Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
+    */
+    let key = path.file_stem() // Get the file stem from the path
+        .and_then(|s| s.to_str()) // Convert OsStr to &str
+        .map(|s| s.split('-').next()) // Split at '-' and take the first part
+        .flatten() // Option<&str> from Option<Option<&str>>
+        .map(|s| s.to_string()) // Convert &str to String
+        .unwrap_or_else(|| "unknown_key".to_string()); // Provide default value on error
+
+    log_debug!("key, ``{}``", key);
+    key
+}
+
+/*  -----------------------------------------------------------------
+    Creates a map of id-to-pid.
+    -----------------------------------------------------------------
+*/
+fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> std::collections::HashMap<String, String> {
+    let mut id_to_pid_map = std::collections::HashMap::new();
+
+    for path_buf in file_paths {
+        let path = path_buf.as_path();
+        let key = parse_key_from_path(&path);
+        let mut file = File::open(&path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        let record: JsonResult<IdToPidInfo> = serde_json::from_str(&contents);
+        match record {
+            Ok(rec) => {
+                // let id = rec.id.unwrap();
+                // let id = "foo".to_string();
+                let id = key;
+                let pid = rec.pid;
+                id_to_pid_map.insert(id, pid);
+            }
+            Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
+        }
+
+
+        // let pid = record.pid.clone().unwrap();
+        // let id = path.file_stem().unwrap().to_str().unwrap().to_string();
+        // id_to_pid_map.insert(id, pid);
+    }
+    log_info!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
+    id_to_pid_map
 }
 
 /*  -----------------------------------------------------------------
@@ -152,15 +216,15 @@ fn main() {
     log_debug!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
-    log_debug!("ocr_paths.len(): {}", ocr_paths.len());
-    log_debug!("ingest_paths.len(): {}", ingest_paths.len());
+    // let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
+    let (ocr_paths, ingest_paths, _error_paths, _other_paths) = find_json_files(source_dir);
     for path in &ocr_paths {
         // pretty-print each path
         log_debug!("{}", path.display());
     }
 
     // make a map of id-to-pid --------------------------------------
+    let id_to_pid_map = make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
     if let Err(e) = process_files(ocr_paths, &output_dir) {
