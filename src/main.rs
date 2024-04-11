@@ -204,6 +204,8 @@ fn main() {
     // get paths ----------------------------------------------------
     // let paths_vector: Vec<PathBuf> = find_json_files(source_dir);
     let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
+    println!("ocr_paths.len(): {}", ocr_paths.len());
+    println!("ingest_paths.len(): {}", ingest_paths.len());
     for path in &ocr_paths {
         // pretty-print each path
         println!("{}", path.display());
