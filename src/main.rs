@@ -1,9 +1,9 @@
 use clap::{arg, Command};
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
-use std::io::{Seek, SeekFrom};
+// use std::io::{Seek, SeekFrom};
 use std::{
-    fs::{File, OpenOptions},
+    fs::File,
     io::{self, Read},
     path::{Path, PathBuf},
 };
