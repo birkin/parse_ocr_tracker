@@ -112,27 +112,6 @@ fn parse_key_from_path(path: &Path) -> String {
     Creates a map of id-to-pid.
     -----------------------------------------------------------------
 */
-// fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> std::collections::HashMap<String, String> {
-//     let mut id_to_pid_map = std::collections::HashMap::new();
-//     for path_buf in file_paths {
-//         let path = path_buf.as_path();
-//         let key = parse_key_from_path(&path);
-//         let mut file = File::open(&path).unwrap();
-//         let mut contents = String::new();
-//         file.read_to_string(&mut contents).unwrap();
-//         let record: JsonResult<IdToPidInfo> = serde_json::from_str(&contents);
-//         match record {
-//             Ok(rec) => {
-//                 let id = key;
-//                 let pid = rec.pid;
-//                 id_to_pid_map.insert(id, pid);
-//             }
-//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
-//         }
-//     }
-//     log_info!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
-//     id_to_pid_map
-// }
 fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
     let mut id_to_pid_map = BTreeMap::new();
     for path_buf in file_paths {
@@ -168,17 +147,50 @@ fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
     Processes the JSON files, creating a data-vector.
     -----------------------------------------------------------------
 */
-fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
+// fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>, output_dir: &str) -> io::Result<()> {
+//     let mut data_vector: Vec<Record> = Vec::new();
+
+//     for path_buf in file_paths {
+//         let path = path_buf.as_path();
+
+//         let key = parse_key_from_path(&path);
+
+//         let mut file = File::open(&path)?;
+//         let mut contents = String::new();
+//         file.read_to_string(&mut contents)?;
+//         let record: JsonResult<Record> = serde_json::from_str(&contents);
+//         match record {
+//             Ok(rec) => {
+//                 data_vector.push(rec);
+//             }
+//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
+//         }
+//     }
+
+//     // After all files have been processed, check if there's any data to append
+//     if !data_vector.is_empty() {
+//         log_debug!("saving to CSV");
+//         save_to_csv(&data_vector, output_dir)?;
+//     }
+
+//     Ok(())
+// }
+fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>, output_dir: &str) -> io::Result<()> {
     let mut data_vector: Vec<Record> = Vec::new();
 
     for path_buf in file_paths {
-        let path = path_buf.as_path();
+        let path: &Path = path_buf.as_path();
+        let key: String = parse_key_from_path(&path);
         let mut file = File::open(&path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let record: JsonResult<Record> = serde_json::from_str(&contents);
         match record {
-            Ok(rec) => {
+            Ok(mut rec) => {
+                let pid: Option<&String> = id_to_pid_map.get(&key);
+                let url: Option<String> = pid.map(|p| format!("https://example.com/{}", p));
+                rec.pid = pid.cloned();
+                rec.pid_url = url;
                 data_vector.push(rec);
             }
             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
@@ -193,6 +205,7 @@ fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
 
     Ok(())
 }
+
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
@@ -253,7 +266,7 @@ fn main() {
     let id_to_pid_map = make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
-    if let Err(e) = process_files(ocr_paths, &output_dir) {
+    if let Err(e) = process_files(ocr_paths, &id_to_pid_map, &output_dir) {
         log_debug!("Error processing files: {}", e);
     }
 }
