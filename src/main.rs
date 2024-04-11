@@ -3,8 +3,8 @@ mod logger; // enables the log_debug!() and log_info!() macros
 use clap::{arg, Command};
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
-// use std::io::{Seek, SeekFrom};
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{self, Read},
     path::{Path, PathBuf},
@@ -22,7 +22,9 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
     Finds all files in the given directory that end with "ocr_complete.json" or "ingest_complete.json".
     -----------------------------------------------------------------
 */
-fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
+fn find_json_files<P: AsRef<Path>>(
+    path: P,
+) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
     let mut error_paths = Vec::new();
@@ -55,7 +57,12 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<
     log_info!("len-error_paths: {}", error_paths.len());
     log_info!("len-other_paths: {}", other_paths.len());
 
-    (ocr_complete_paths, ingest_complete_paths, error_paths, other_paths)
+    (
+        ocr_complete_paths,
+        ingest_complete_paths,
+        error_paths,
+        other_paths,
+    )
 }
 
 /*  -----------------------------------------------------------------
@@ -86,20 +93,17 @@ struct IdToPidInfo {
 }
 
 /*  -----------------------------------------------------------------
-    Parses the key from the path.
+    Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
     -----------------------------------------------------------------
 */
 fn parse_key_from_path(path: &Path) -> String {
-    /*
-    Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
-    */
-    let key = path.file_stem() // Get the file stem from the path
+    let key = path
+        .file_stem() // Get the file stem from the path
         .and_then(|s| s.to_str()) // Convert OsStr to &str
         .map(|s| s.split('-').next()) // Split at '-' and take the first part
         .flatten() // Option<&str> from Option<Option<&str>>
         .map(|s| s.to_string()) // Convert &str to String
         .unwrap_or_else(|| "unknown_key".to_string()); // Provide default value on error
-
     log_debug!("key, ``{}``", key);
     key
 }
@@ -108,31 +112,53 @@ fn parse_key_from_path(path: &Path) -> String {
     Creates a map of id-to-pid.
     -----------------------------------------------------------------
 */
-fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> std::collections::HashMap<String, String> {
-    let mut id_to_pid_map = std::collections::HashMap::new();
-
+// fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> std::collections::HashMap<String, String> {
+//     let mut id_to_pid_map = std::collections::HashMap::new();
+//     for path_buf in file_paths {
+//         let path = path_buf.as_path();
+//         let key = parse_key_from_path(&path);
+//         let mut file = File::open(&path).unwrap();
+//         let mut contents = String::new();
+//         file.read_to_string(&mut contents).unwrap();
+//         let record: JsonResult<IdToPidInfo> = serde_json::from_str(&contents);
+//         match record {
+//             Ok(rec) => {
+//                 let id = key;
+//                 let pid = rec.pid;
+//                 id_to_pid_map.insert(id, pid);
+//             }
+//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
+//         }
+//     }
+//     log_info!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
+//     id_to_pid_map
+// }
+fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
+    let mut id_to_pid_map = BTreeMap::new();
     for path_buf in file_paths {
         let path = path_buf.as_path();
         let key = parse_key_from_path(&path);
-        let mut file = File::open(&path).unwrap();
+        let mut file = match File::open(&path) {
+            Ok(file) => file,
+            Err(e) => {
+                log_debug!("Error opening file {:?}: {}", path, e);
+                continue;
+            }
+        };
         let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        if let Err(e) = file.read_to_string(&mut contents) {
+            log_debug!("Error reading file to string {:?}: {}", path, e);
+            continue;
+        }
         let record: JsonResult<IdToPidInfo> = serde_json::from_str(&contents);
         match record {
             Ok(rec) => {
-                // let id = rec.id.unwrap();
-                // let id = "foo".to_string();
                 let id = key;
                 let pid = rec.pid;
                 id_to_pid_map.insert(id, pid);
             }
             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
         }
-
-
-        // let pid = record.pid.clone().unwrap();
-        // let id = path.file_stem().unwrap().to_str().unwrap().to_string();
-        // id_to_pid_map.insert(id, pid);
     }
     log_info!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
     id_to_pid_map
