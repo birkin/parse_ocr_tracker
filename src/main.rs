@@ -147,35 +147,11 @@ fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
     Processes the JSON files, creating a data-vector.
     -----------------------------------------------------------------
 */
-// fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>, output_dir: &str) -> io::Result<()> {
-//     let mut data_vector: Vec<Record> = Vec::new();
-
-//     for path_buf in file_paths {
-//         let path = path_buf.as_path();
-
-//         let key = parse_key_from_path(&path);
-
-//         let mut file = File::open(&path)?;
-//         let mut contents = String::new();
-//         file.read_to_string(&mut contents)?;
-//         let record: JsonResult<Record> = serde_json::from_str(&contents);
-//         match record {
-//             Ok(rec) => {
-//                 data_vector.push(rec);
-//             }
-//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
-//         }
-//     }
-
-//     // After all files have been processed, check if there's any data to append
-//     if !data_vector.is_empty() {
-//         log_debug!("saving to CSV");
-//         save_to_csv(&data_vector, output_dir)?;
-//     }
-
-//     Ok(())
-// }
-fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>, output_dir: &str) -> io::Result<()> {
+fn process_files(
+    file_paths: Vec<PathBuf>,
+    id_to_pid_map: &BTreeMap<String, String>,
+    output_dir: &str,
+) -> io::Result<()> {
     let mut data_vector: Vec<Record> = Vec::new();
 
     for path_buf in file_paths {
@@ -188,7 +164,8 @@ fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, Stri
         match record {
             Ok(mut rec) => {
                 let pid: Option<&String> = id_to_pid_map.get(&key);
-                let url: Option<String> = pid.map(|p| format!("https://example.com/{}", p));
+                let url: Option<String> = pid
+                    .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
                 rec.pid = pid.cloned();
                 rec.pid_url = url;
                 data_vector.push(rec);
@@ -205,7 +182,6 @@ fn process_files(file_paths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, Stri
 
     Ok(())
 }
-
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
