@@ -157,17 +157,20 @@ fn process_files(
     for path_buf in file_paths {
         let path: &Path = path_buf.as_path();
         let key: String = parse_key_from_path(&path);
+        // reads ocr-data -------------------------------------------
         let mut file = File::open(&path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let record: JsonResult<Record> = serde_json::from_str(&contents);
         match record {
             Ok(mut rec) => {
+                // looks up pid and url from hashmap ----------------
                 let pid: Option<&String> = id_to_pid_map.get(&key);
                 let url: Option<String> = pid
                     .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
                 rec.pid = pid.cloned();
                 rec.pid_url = url;
+                // appends record to data-vector --------------------
                 data_vector.push(rec);
             }
             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
