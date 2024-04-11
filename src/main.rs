@@ -17,26 +17,9 @@ use walkdir::WalkDir;
 */
 include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo; is the target dir; and is only available during build process
 
-// fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
-//     let mut paths = Vec::new();
-//     for entry in WalkDir::new(path)
-//         .into_iter()
-//         .filter_map(|e| e.ok())
-//         .filter(|e| e.path().is_file() && e.path().extension().unwrap_or_default() == "json")
-//     {
-//         paths.push(entry.into_path());
-//     }
-//     paths.sort_by(|a, b| a.as_path().cmp(b.as_path())); // sort uses `cmp` for safe comparison without assuming UTF-8 encoding.
-//                                                         // for path in &paths {
-//                                                         //     // pretty-print each path
-//                                                         //     log_debug!("{}", path.display());
-//                                                         // }
-//     log_debug!("len-paths: {}", paths.len());
-//     paths
-// }
-
-// fn find_specific_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
-// fn find_json_files<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
+/*  
+    Finds all files in the given directory that end with "ocr_complete.json" or "ingest_complete.json".
+*/
 fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
@@ -66,9 +49,12 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
     log_debug!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
 
     (ocr_complete_paths, ingest_complete_paths)
-    // ocr_complete_paths
 }
 
+/*
+    Represents the structure of the JSON files that are being parsed.
+    Note that the `pid` and `pid_url` fields are not part of the original JSON files; they're populated later.
+*/
 #[derive(Debug, Deserialize, Serialize)]
 struct Record {
     orientation: i32,
@@ -85,39 +71,9 @@ struct Record {
     pid_url: Option<String>,
 }
 
-// fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
-//     let mut data_vector: Vec<Record> = Vec::new();
-
-//     for path_buf in file_paths {
-//         let path = path_buf.as_path();
-//         let mut file = File::open(&path)?;
-//         let mut contents = String::new();
-//         file.read_to_string(&mut contents)?;
-
-//         // Deserialize the JSON data
-//         let record: JsonResult<Record> = serde_json::from_str(&contents);
-//         match record {
-//             Ok(rec) => {
-//                 data_vector.push(rec);
-//                 // When the vector has a length of 100 items, append to a CSV and clear the vector
-//                 if data_vector.len() >= 100 {
-//                     log_debug!("appending to CSV");
-//                     append_to_csv(&data_vector, output_dir)?;
-//                     data_vector.clear();
-//                 }
-//             }
-//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
-//         }
-//     }
-
-//     // Append any remaining data to the CSV
-//     if !data_vector.is_empty() {
-//         append_to_csv(&data_vector, output_dir)?;
-//     }
-
-//     Ok(())
-// }
-
+/* 
+    Processes the JSON files, creating a data-vector.
+*/
 fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
     let mut data_vector: Vec<Record> = Vec::new();
 
@@ -144,6 +100,9 @@ fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
     Ok(())
 }
 
+/*
+    Saves the data-vector to a CSV file.
+*/
 fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
     let file = File::create(file_path)?;
@@ -152,30 +111,14 @@ fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     for record in data {
         wtr.serialize(record)?;
     }
-
     wtr.flush()?;
     Ok(())
 }
 
-// fn append_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
-//     let file_path = format!("{}/output.csv", output_dir);
-//     let file = OpenOptions::new()
-//         .write(true)
-//         .create(true)
-//         .append(true)
-//         .open(Path::new(&file_path))?;
-//     let mut wtr = csv::Writer::from_writer(file);
-
-//     for record in data {
-//         wtr.serialize(record)?;
-//     }
-
-//     wtr.flush()?;
-//     Ok(())
-// }
-
+/*
+    Main function.
+*/
 fn main() {
-
     // init logger --------------------------------------------------
     logger::init_logger().unwrap();
 
@@ -193,7 +136,7 @@ fn main() {
         .get_one::<String>("source_dir_path")
         .expect("Failed to get required 'source_dir_path' argument.");
     let source_dir: &str = source_dir_temp_ref.as_str(); // or... let source_dir: String = source_dir_temp_ref.to_string();
-    // log_debug!("source-arg: {:?}", source_dir);
+                                                         // log_debug!("source-arg: {:?}", source_dir);
     log_info!("source-arg: {:?}", source_dir);
 
     // get output_dir -----------------------------------------------
