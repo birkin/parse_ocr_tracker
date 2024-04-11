@@ -78,6 +78,8 @@ struct Record {
     below_90: f64,
     below_60: f64,
     below_30: f64,
+    pid: Option<String>,
+    pid_url: Option<String>,
 }
 
 // fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
@@ -121,15 +123,7 @@ fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
         let mut file = File::open(&path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-
-        // Deserialize the JSON data
         let record: JsonResult<Record> = serde_json::from_str(&contents);
-        // println!("record: {:?}", record);
-        // // break after the first five records
-        // if data_vector.len() >= 5 {
-        //     break;
-        // }
-
         match record {
             Ok(rec) => {
                 data_vector.push(rec);
