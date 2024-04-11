@@ -1,3 +1,5 @@
+mod logger; // enables the log_debug!() and log_info!() macros
+
 use clap::{arg, Command};
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
@@ -27,9 +29,9 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
 //     paths.sort_by(|a, b| a.as_path().cmp(b.as_path())); // sort uses `cmp` for safe comparison without assuming UTF-8 encoding.
 //                                                         // for path in &paths {
 //                                                         //     // pretty-print each path
-//                                                         //     println!("{}", path.display());
+//                                                         //     log_debug!("{}", path.display());
 //                                                         // }
-//     println!("len-paths: {}", paths.len());
+//     log_debug!("len-paths: {}", paths.len());
 //     paths
 // }
 
@@ -51,7 +53,8 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
             } else if file_name.ends_with("ingest_complete.json") {
                 ingest_complete_paths.push(path);
             } else {
-                println!("Ignoring file: {}", file_name);
+                // log_debug!("zIgnoring file: {}", file_name);
+                log_debug!("vIgnoring file: {}", file_name);
             }
         }
     }
@@ -59,8 +62,8 @@ fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>) {
     ocr_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
     ingest_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
 
-    println!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
-    println!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
+    log_debug!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
+    log_debug!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
 
     (ocr_complete_paths, ingest_complete_paths)
     // ocr_complete_paths
@@ -98,12 +101,12 @@ struct Record {
 //                 data_vector.push(rec);
 //                 // When the vector has a length of 100 items, append to a CSV and clear the vector
 //                 if data_vector.len() >= 100 {
-//                     println!("appending to CSV");
+//                     log_debug!("appending to CSV");
 //                     append_to_csv(&data_vector, output_dir)?;
 //                     data_vector.clear();
 //                 }
 //             }
-//             Err(e) => println!("Error parsing JSON from {:?}: {}", path, e),
+//             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
 //         }
 //     }
 
@@ -128,13 +131,13 @@ fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
             Ok(rec) => {
                 data_vector.push(rec);
             }
-            Err(e) => println!("Error parsing JSON from {:?}: {}", path, e),
+            Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
         }
     }
 
     // After all files have been processed, check if there's any data to append
     if !data_vector.is_empty() {
-        println!("saving to CSV");
+        log_debug!("saving to CSV");
         save_to_csv(&data_vector, output_dir)?;
     }
 
@@ -172,6 +175,10 @@ fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
 // }
 
 fn main() {
+
+    // init logger --------------------------------------------------
+    logger::init_logger().unwrap();
+
     // get args -----------------------------------------------------
     let matches = Command::new("parse_ocr_tracker")
         // .version("1.0z")
@@ -186,30 +193,31 @@ fn main() {
         .get_one::<String>("source_dir_path")
         .expect("Failed to get required 'source_dir_path' argument.");
     let source_dir: &str = source_dir_temp_ref.as_str(); // or... let source_dir: String = source_dir_temp_ref.to_string();
-    println!("source-arg: {:?}", source_dir);
+    // log_debug!("source-arg: {:?}", source_dir);
+    log_info!("source-arg: {:?}", source_dir);
 
     // get output_dir -----------------------------------------------
     let output_dir_temp_ref: &String = matches
         .get_one::<String>("output_dir_path")
         .expect("Failed to get required 'output_dir_path' argument.");
     let output_dir: &str = output_dir_temp_ref.as_str();
-    println!("output-arg: {:?}", output_dir);
+    log_debug!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
     // let paths_vector: Vec<PathBuf> = find_json_files(source_dir);
     let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
-    println!("ocr_paths.len(): {}", ocr_paths.len());
-    println!("ingest_paths.len(): {}", ingest_paths.len());
+    log_debug!("ocr_paths.len(): {}", ocr_paths.len());
+    log_debug!("ingest_paths.len(): {}", ingest_paths.len());
     for path in &ocr_paths {
         // pretty-print each path
-        println!("{}", path.display());
+        log_debug!("{}", path.display());
     }
 
     // make a map of id-to-pid --------------------------------------
 
     // process files ------------------------------------------------
     if let Err(e) = process_files(ocr_paths, &output_dir) {
-        eprintln!("Error processing files: {}", e);
+        log_debug!("Error processing files: {}", e);
     }
 }
 
