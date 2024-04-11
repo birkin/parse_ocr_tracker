@@ -138,14 +138,14 @@ fn process_files(file_paths: Vec<PathBuf>, output_dir: &str) -> io::Result<()> {
 
     // After all files have been processed, check if there's any data to append
     if !data_vector.is_empty() {
-        println!("Appending to CSV");
-        append_to_csv(&data_vector, output_dir)?;
+        println!("saving to CSV");
+        save_to_csv(&data_vector, output_dir)?;
     }
 
     Ok(())
 }
 
-fn append_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
+fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
     let file = File::create(file_path)?;
     let mut wtr = csv::Writer::from_writer(file);
