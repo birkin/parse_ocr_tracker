@@ -179,7 +179,11 @@ fn process_files(
                 // appends record to data-vector --------------------
                 data_vector.push(rec);
             }
-            Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
+            Err(e) => log_debug!(
+                "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
+                path,
+                e
+            ),
         }
     }
 
@@ -233,8 +237,12 @@ fn main() {
 
     // get paths ----------------------------------------------------
     let (ocr_paths, ingest_paths, _error_paths, _other_paths) = find_json_files(source_dir);
+    log_debug!("ocr_paths...");
     for path in &ocr_paths {
-        // pretty-print each path
+        log_debug!("{}", path.display());
+    }
+    log_debug!("error_paths...");
+    for path in &_error_paths {
         log_debug!("{}", path.display());
     }
 
