@@ -83,8 +83,8 @@ struct Record {
     below_90: f64,
     below_60: f64,
     below_30: f64,
-    pid: Option<String>, // populated later
-    pid_url: Option<String>,
+    pid: Option<String>,     // populated later
+    pid_url: Option<String>, // populated later
 }
 
 /*  -----------------------------------------------------------------
