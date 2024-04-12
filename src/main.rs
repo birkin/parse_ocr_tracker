@@ -25,11 +25,12 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
 fn find_json_files<P: AsRef<Path>>(
     path: P,
 ) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
+    // -- setup data-vectors
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
     let mut error_paths = Vec::new();
     let mut other_paths = Vec::new();
-
+    // -- take a walk
     for entry in WalkDir::new(path)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -48,15 +49,15 @@ fn find_json_files<P: AsRef<Path>>(
             }
         }
     }
-
+    // -- sort the vectors
     ocr_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
     ingest_complete_paths.sort_by(|a, b| a.as_path().cmp(b.as_path()));
-
+    // output counts
     log_info!("len-ocr_complete_paths: {}", ocr_complete_paths.len());
     log_info!("len-ingest_complete_paths: {}", ingest_complete_paths.len());
     log_info!("len-error_paths: {}", error_paths.len());
     log_info!("len-other_paths: {}", other_paths.len());
-
+    // -- return
     (
         ocr_complete_paths,
         ingest_complete_paths,
@@ -66,7 +67,7 @@ fn find_json_files<P: AsRef<Path>>(
 }
 
 /*  -----------------------------------------------------------------
-    Represents the structure of the JSON files that are being parsed.
+    Represents the structure of the OCR JSON tracker files being parsed.
     Note that the `pid` and `pid_url` fields are not part of the original JSON files; they're populated later.
     -----------------------------------------------------------------
 */
@@ -82,18 +83,24 @@ struct Record {
     below_90: f64,
     below_60: f64,
     below_30: f64,
-    pid: Option<String>,
+    pid: Option<String>, // populated later
     pid_url: Option<String>,
 }
 
+/*  -----------------------------------------------------------------
+    Represents the structure of the ingestion JSON tracker files that just have a pid.
+    The `id` field will be populated by parsing the local-id from the filepath.
+    -----------------------------------------------------------------
+*/
 #[derive(Debug, Deserialize, Serialize)]
 struct IdToPidInfo {
-    id: Option<String>,
+    id: Option<String>, // populated later
     pid: String,
 }
 
 /*  -----------------------------------------------------------------
     Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
+    Called by make_id_to_pid_map() to create the hashmap, and then by process_files() to get the key to do the hashmap lookup.
     -----------------------------------------------------------------
 */
 fn parse_key_from_path(path: &Path) -> String {
@@ -109,7 +116,8 @@ fn parse_key_from_path(path: &Path) -> String {
 }
 
 /*  -----------------------------------------------------------------
-    Creates a map of id-to-pid.
+    Creates a hashmap of id-to-pid.
+    (Ok ok, it's a BTreeMap, not a hashmap, cuz I wanted it sorted.)
     -----------------------------------------------------------------
 */
 fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
@@ -144,7 +152,7 @@ fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
 }
 
 /*  -----------------------------------------------------------------
-    Processes the JSON files, creating a data-vector.
+    Processes the JSON files, creating the data-vector that'll be used to create the CSV.
     -----------------------------------------------------------------
 */
 fn process_files(
@@ -184,12 +192,11 @@ fn process_files(
 fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
     let file = File::create(file_path)?;
-    let mut wtr = csv::Writer::from_writer(file);
-
+    let mut wrtr = csv::Writer::from_writer(file);
     for record in data {
-        wtr.serialize(record)?;
+        wrtr.serialize(record)?;
     }
-    wtr.flush()?;
+    wrtr.flush()?;
     Ok(())
 }
 
