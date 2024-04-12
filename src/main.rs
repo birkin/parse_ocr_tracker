@@ -139,7 +139,7 @@ fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
             Err(e) => log_debug!("Error parsing JSON from {:?}: {}", path, e),
         }
     }
-    log_info!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
+    log_debug!("id_to_pid_map, ``{:#?}``", id_to_pid_map);
     id_to_pid_map
 }
 
@@ -150,10 +150,8 @@ fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
 fn process_files(
     file_paths: Vec<PathBuf>,
     id_to_pid_map: &BTreeMap<String, String>,
-    output_dir: &str,
-) -> io::Result<()> {
+) -> io::Result<Vec<Record>> {
     let mut data_vector: Vec<Record> = Vec::new();
-
     for path_buf in file_paths {
         let path: &Path = path_buf.as_path();
         let key: String = parse_key_from_path(&path);
@@ -177,15 +175,8 @@ fn process_files(
         }
     }
 
-    // After all files have been processed, check if there's any data to append
-    if !data_vector.is_empty() {
-        log_debug!("saving to CSV");
-        save_to_csv(&data_vector, output_dir)?;
-    }
-
-    Ok(())
+    Ok(data_vector)
 }
-
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
     -----------------------------------------------------------------
@@ -231,10 +222,9 @@ fn main() {
         .get_one::<String>("output_dir_path")
         .expect("Failed to get required 'output_dir_path' argument.");
     let output_dir: &str = output_dir_temp_ref.as_str();
-    log_debug!("output-arg: {:?}", output_dir);
+    log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    // let (ocr_paths, ingest_paths): (Vec<PathBuf>, Vec<PathBuf>) = find_json_files(source_dir);
     let (ocr_paths, ingest_paths, _error_paths, _other_paths) = find_json_files(source_dir);
     for path in &ocr_paths {
         // pretty-print each path
@@ -245,8 +235,13 @@ fn main() {
     let id_to_pid_map = make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
-    if let Err(e) = process_files(ocr_paths, &id_to_pid_map, &output_dir) {
-        log_debug!("Error processing files: {}", e);
+    match process_files(ocr_paths, &id_to_pid_map) {
+        Ok(data_vector) => {
+            if let Err(e) = save_to_csv(&data_vector, output_dir) {
+                log_info!("Error saving to CSV: {}", e);
+            }
+        }
+        Err(e) => log_info!("Error processing files: {}", e),
     }
 }
 

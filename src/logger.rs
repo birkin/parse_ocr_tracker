@@ -52,7 +52,7 @@ $arg is the name of the variable that will hold the input passed to the macro.
 #[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {
-        log::info!("{}", format_args!($($arg)*));
+        log::info!("{}", format_args!($($arg)*))
     };
 }
 
