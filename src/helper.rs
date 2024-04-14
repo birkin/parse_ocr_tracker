@@ -222,6 +222,7 @@ pub fn prepare_json(
     let eastern_time = utc_now_time.with_timezone(&Eastern);
     let formatted_date_time = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
     map.insert("datetime_stamp", formatted_date_time);
+    map.insert("time_taken", "temp_holder".to_string()); // the same insert-key will update it later
 
     // -- TODO, Add other data
     map.insert("source_path", "foo".to_string());
@@ -237,7 +238,7 @@ pub fn prepare_json(
     // println!("{}", json);
     // Ok(())
 
-    // -- finally, add elapsed time
+    // -- finally, update elapsed time value (the key was created above)
     let elapsed_seconds: f64 = start_instant.elapsed().as_secs_f64(); // uses monotonic clock
     let elapsed_string: String = if elapsed_seconds < 60.0 {
         format!("{:.1} seconds", elapsed_seconds)
@@ -245,9 +246,9 @@ pub fn prepare_json(
         let elapsed_minutes = elapsed_seconds / 60.0;
         format!("{:.1} minutes", elapsed_minutes)
     };
-    map.insert("elapsed_time", elapsed_string);
+    map.insert("time_taken", elapsed_string);
 
-    // -- onvert the BTreeMap into a JSON string
+    // -- convert the map into a JSON string
     match serde_json::to_string_pretty(&map) {
         Ok(json) => json,
         Err(e) => format!("Error serializing output-JSON: {}", e),
