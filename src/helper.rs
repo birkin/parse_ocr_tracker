@@ -1,20 +1,21 @@
+// Assuming `logger` is declared as `pub mod logger;` in `main.rs`
+use crate::{log_info, log_debug}; // Import logging functions
 
 use std::{
-    collections::BTreeMap,
-    fs::File,
-    io::{self, Read},
+    // fs::File,
+    // io::{self, Read},
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
-
 
 /*  -----------------------------------------------------------------
     Finds all files in the given directory that end with "ocr_complete.json" or "ingest_complete.json".
     -----------------------------------------------------------------
 */
-fn find_json_files<P: AsRef<Path>>(
+pub fn find_json_files<P: AsRef<Path>>(
     path: P,
 ) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
+    log_debug!("starting find_json_files()");
     // -- setup data-vectors
     let mut ocr_complete_paths = Vec::new();
     let mut ingest_complete_paths = Vec::new();
