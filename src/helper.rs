@@ -192,7 +192,7 @@ pub fn process_files(
     -----------------------------------------------------------------
 */
 pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
-    let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
+    let file_path = format!("{}/tracker_output.csv", output_dir); // Consider more sophisticated file naming
     let file = File::create(file_path)?;
     let mut wrtr = csv::Writer::from_writer(file);
     for record in data {
