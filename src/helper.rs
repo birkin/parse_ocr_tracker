@@ -1,12 +1,7 @@
-// use crate::{log_debug, log_info, log_warn}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
-
-use chrono::{DateTime, Utc};
-use chrono_tz::US::Eastern;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use serde_json::Result as JsonResult;
-use serde_json::{json, Value};
+use serde_json::{json, Result as JsonResult, Value};
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -212,24 +207,33 @@ pub fn process_files(
     Saves the data-vector to a CSV file.
     -----------------------------------------------------------------
 */
-pub fn save_to_csv(data: &[Record], output_dir: &str) -> Result<String, String> {
-    let file_path = format!("{}/tracker_output.csv", output_dir);
+pub fn save_to_csv(
+    data: &[Record],
+    output_dir: &str,
+    formatted_date_time: &str,
+) -> Result<String, String> {
+    // -- update the formatted_date_time
+    let formatted_date_time: &str = formatted_date_time.split_whitespace().next().unwrap();
+    let trimmed_datetime: &str = &formatted_date_time[0..19]; // slice up to the excluded timezone
+    let date_for_filename: String = trimmed_datetime.replace(":", "-"); // replaces colons with hyphens
+    log_debug!("date_for_filename: {}", &date_for_filename);
+    let file_path: String = format!("{}/tracker_output_{}.csv", output_dir, date_for_filename);
+    // -- create the file
     let file = match File::create(&file_path) {
         Ok(file) => file,
         Err(e) => return Err(format!("Failed to create file: {}", e)),
     };
     let mut wrtr = csv::Writer::from_writer(file);
-
+    // -- write the data
     for record in data {
         if let Err(e) = wrtr.serialize(record) {
             return Err(format!("Failed to serialize record: {}", e));
         }
     }
-
     if let Err(e) = wrtr.flush() {
         return Err(format!("Failed to flush writer: {}", e));
     }
-
+    // -- return the file-path
     Ok(file_path)
 }
 
@@ -246,14 +250,15 @@ pub fn prepare_json(
     rejected_files_count: usize,
     error_paths: Vec<PathBuf>,
     start_instant: Instant,
-    utc_now_time: DateTime<Utc>,
+    formatted_date_time: String,
 ) -> String {
     // -- create the main Map
     let mut map = IndexMap::<String, Value>::new();
 
     // -- convert UTC-Time to Eastern-Time (automatically handles DST)
-    let eastern_time = utc_now_time.with_timezone(&Eastern);
-    let formatted_date_time = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
+    // -- update times
+    // let eastern_time = utc_now_time.with_timezone(&Eastern);
+    // let formatted_date_time = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
     map.insert("datetime_stamp".to_string(), json!(formatted_date_time));
     map.insert("time_taken".to_string(), json!("temp_holder")); // the same insert-key will update it later
 
