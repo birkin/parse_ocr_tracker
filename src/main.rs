@@ -73,18 +73,23 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
+    let mut csv_file_path: Option<String> = None; // will be updated and used in return-json
     match helper::process_files(ocr_paths, &id_to_pid_map) {
         Ok(data_vector) => {
-            if let Err(e) = helper::save_to_csv(&data_vector, output_dir) {
-                log_info!("Error saving to CSV: {}", e);
+            match helper::save_to_csv(&data_vector, output_dir) {
+                Ok(file_path) => {
+                    log_info!("CSV saved successfully at: {}", file_path);
+                    csv_file_path = Some(file_path); // Capture the filepath here
+                }
+                Err(e) => log_info!("Error saving to CSV: {}", e),
             }
         }
         Err(e) => log_info!("Error processing files: {}", e),
     }
 
     // prepare json -------------------------------------------------
-    let return_json: String = helper::prepare_json(&_error_paths, start_instant, datestamp_time);
-    // -- on success print json -- don't log the json, but actually print it out
+    let return_json: String =
+        helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
