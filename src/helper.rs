@@ -2,6 +2,7 @@ use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mo
 
 use chrono::{DateTime, Utc};
 use chrono_tz::US::Eastern;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
 use std::{
@@ -215,7 +216,7 @@ pub fn prepare_json(
     utc_now_time: DateTime<Utc>,
 ) -> String {
     // -- create the main BTreeMap
-    let mut map = BTreeMap::new();
+    let mut map = IndexMap::new();
 
     // -- convert UTC-Time to Eastern-Time (automatically handles DST)
     let eastern_time = utc_now_time.with_timezone(&Eastern);
