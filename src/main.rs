@@ -40,7 +40,7 @@ fn main() {
     let about_text = r#"Info...
   - Walks `source_dir_path` and creates `(output_dir_path)/tracker_output.csv`.
   - Logs to console only; default log-level is 'warn'; use `export LOG_LEVEL="debug"` or "info" to see more output.
-  - Useful json is returned, and saved to `(output_dir_path)/tracker_info.json`."#;
+  - Useful json is returned with paths, counts, and error-filepaths."#;
     let matches = Command::new("parse_ocr_tracker")
         .version(GIT_COMMIT)
         .about(about_text)
@@ -66,7 +66,7 @@ fn main() {
     // get paths ----------------------------------------------------
     let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
     let ocr_tracker_paths_count = ocr_paths.len();
-    log_warn!("len(ocr_paths): {}", ocr_tracker_paths_count);
+    log_debug!("len(ocr_paths): {}", ocr_tracker_paths_count);
     let _ingest_tracker_paths_count = ingest_paths.len();
     let _error_tracker_paths_count = error_paths.len();
     let _other_json_paths_count = other_paths.len();
