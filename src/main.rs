@@ -90,7 +90,7 @@ fn main() {
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(csv_file_path, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, csv_file_path, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
