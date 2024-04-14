@@ -4,7 +4,7 @@ This app parses the ocr-tracker files and creates a CSV file for analysis in Ope
 
 Background...
 
-For the Hall-Hoag project, we have too many files to ingest to carefully spot-check and address the inevitable OCR issues that will be discovered.
+For the Hall-Hoag project, the expected 800,000+ items are far too many to carefully spot-check and address the inevitable OCR issues that will be discovered.
 
 The question: Down the road, when time and labor are available, how might we most efficiently identify the items that should be first checked for possible problems?
 
@@ -18,26 +18,15 @@ Note that this app is written in Rust. Our dev-team doesn't code in Rust; we're 
 ## Usage...
 
 for development:
+
 `% cargo run -- --source_dir_path "foo" --output_dir_path "bar"`
 
 for binary:
+
+`% parse_ocr_tracker --help`
+
 `% parse_ocr_tracker --source_dir_path "foo" --output_dir_path "bar"`
 
----
-
-## Processing...
-
-- recursively walk the source-directory and assemble a list of filepaths
-
-- for each filepath:
-    - open file and grab a, b, c data
-    - from the filename, grab the item-id
-    - see if there's a corresponding ingestion-complete json file
-    - open that file if it exists and grab the pid
-    - saved it to a storage-array
-    
-- if the len of the storage-array is 100 things, append the data to a csv file
-
-- maybe output another summary.json file to the output-dir.
+The returned json shows the path to the csv file, as well as other useful info.
 
 ---
