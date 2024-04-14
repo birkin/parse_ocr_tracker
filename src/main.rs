@@ -70,5 +70,4 @@ fn main() {
     }
 }
 
-// let zz: () = the_var;
-//
+// let zz: () = the_var; // for reference -- hack to inspect the type of the_var
