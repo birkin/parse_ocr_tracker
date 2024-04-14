@@ -5,6 +5,7 @@ use chrono_tz::US::Eastern;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
+use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -211,32 +212,30 @@ pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     -----------------------------------------------------------------
 */
 pub fn prepare_json(
-    _error_paths: &[PathBuf],
+    error_paths: &[PathBuf],
     start_instant: Instant,
     utc_now_time: DateTime<Utc>,
 ) -> String {
     // -- create the main BTreeMap
-    let mut map = IndexMap::new();
+    let mut map = IndexMap::<String, Value>::new();
 
     // -- convert UTC-Time to Eastern-Time (automatically handles DST)
     let eastern_time = utc_now_time.with_timezone(&Eastern);
     let formatted_date_time = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
-    map.insert("datetime_stamp", formatted_date_time);
-    map.insert("time_taken", "temp_holder".to_string()); // the same insert-key will update it later
+    map.insert("datetime_stamp".to_string(), json!(formatted_date_time));
+    map.insert("time_taken".to_string(), json!("temp_holder")); // the same insert-key will update it later
 
     // -- TODO, Add other data
-    map.insert("source_path", "foo".to_string());
-    map.insert("output_path", "bar".to_string());
+    map.insert("source_path".to_string(), json!("foo"));
+    map.insert("output_path".to_string(), json!("bar"));
 
-    // // -- create a vector of strings
-    // let mut error_paths_vec: Vec<String> = Vec::new();
-    // for path in error_paths {
-    //     let path_str = path.to_string_lossy().to_string();
-    //     error_paths_vec.push(path_str);
-    // }
-    // let json = serde_json::to_string_pretty(&error_paths_vec)?;
-    // println!("{}", json);
-    // Ok(())
+    // -- create a vector of strings
+    let mut error_paths_vec: Vec<String> = Vec::new();
+    for path in error_paths {
+        let path_str = path.to_string_lossy().to_string();
+        error_paths_vec.push(path_str);
+    }
+    map.insert("error_paths".to_string(), json!(error_paths_vec));
 
     // -- finally, update elapsed time value (the key was created above)
     let elapsed_seconds: f64 = start_instant.elapsed().as_secs_f64(); // uses monotonic clock
@@ -246,7 +245,7 @@ pub fn prepare_json(
         let elapsed_minutes = elapsed_seconds / 60.0;
         format!("{:.1} minutes", elapsed_minutes)
     };
-    map.insert("time_taken", elapsed_string);
+    map.insert("time_taken".to_string(), json!(elapsed_string));
 
     // -- convert the map into a JSON string
     match serde_json::to_string_pretty(&map) {
