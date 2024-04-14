@@ -82,7 +82,12 @@ fn main() {
         });
     let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
-    let _rejected_files: Vec<PathBuf> = path_results.rejected_paths;
+    let rejected_files: Vec<PathBuf> = path_results.rejected_paths;
+    log_debug!("all rejected_file paths...");
+    for file in &rejected_files {
+        log_debug!("{:?}", file);
+    }
+    let rejected_files_count: usize = rejected_files.len();
 
     // -- save csv --------------------------------------------------
     let csv_file_path = helper::save_to_csv(&data_vector, output_dir);
@@ -100,7 +105,7 @@ fn main() {
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, rejected_files_count, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 

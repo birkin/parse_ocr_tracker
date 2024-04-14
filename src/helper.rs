@@ -158,7 +158,8 @@ pub fn parse_key_from_path(path: &Path) -> String {
     - creates the vector of rejected paths -- basically organization-tracker-files
     -----------------------------------------------------------------
 */
-pub struct PathResults { // just a struct to hold and return the two vectors below
+pub struct PathResults {
+    // just a struct to hold and return the two vectors below
     pub extracted_data_files: Vec<Record>,
     pub rejected_paths: Vec<PathBuf>,
 }
@@ -174,7 +175,7 @@ pub fn process_files(
     for ocr_tracker_filepath_buf in ocr_tracker_filepaths {
         let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();
         let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath); // get the key for the hashmap lookiup
-        // read ocr-data --------------------------------------------
+                                                                               // read ocr-data --------------------------------------------
         let mut ocr_tracker_file_obj = File::open(&ocr_tracker_filepath)?;
         let mut ocr_tracker_contents = String::new();
         ocr_tracker_file_obj.read_to_string(&mut ocr_tracker_contents)?;
@@ -205,7 +206,6 @@ pub fn process_files(
         extracted_data_files: temp_tracker_data_vector,
         rejected_paths: temp_rejected_paths,
     })
-
 } // end fn process_files()
 
 /*  -----------------------------------------------------------------
@@ -243,6 +243,7 @@ pub fn prepare_json(
     log_level: String,
     csv_file_path: Option<String>,
     ocr_data_vector_count: usize,
+    rejected_files_count: usize,
     error_paths: Vec<PathBuf>,
     start_instant: Instant,
     utc_now_time: DateTime<Utc>,
@@ -267,6 +268,12 @@ pub fn prepare_json(
     map.insert(
         "ocr_data_vector_count".to_string(),
         json!(ocr_data_vector_count),
+    );
+
+    // -- rejected-files count
+    map.insert(
+        "rejected_files_count_(org_tracker_files)".to_string(),
+        json!(rejected_files_count),
     );
 
     // -- error-paths
