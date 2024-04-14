@@ -43,20 +43,27 @@ fn main() {
     log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    // let (ocr_paths, ingest_paths, _error_paths, _other_paths) = find_json_files(source_dir);
     let (ocr_paths, ingest_paths, _error_paths, _other_paths) = helper::find_json_files(source_dir);
-
-    log_debug!("ocr_paths...");
-    for path in &ocr_paths {
-        log_debug!("{}", path.display());
+    log_debug!("error_paths: [");
+    for (i, path) in _error_paths.iter().enumerate() {
+        if i != ocr_paths.len() - 1 {
+            println!("    {},", path.display()); // Print each path followed by a comma
+        } else {
+            println!("    {}", path.display()); // Print the last path without a comma
+        }
     }
-    log_debug!("error_paths...");
-    for path in &_error_paths {
-        log_debug!("{}", path.display());
+    log_debug!("]");
+    log_debug!("_other_paths: [");
+    for (i, path) in _other_paths.iter().enumerate() {
+        if i != ocr_paths.len() - 1 {
+            println!("    {},", path.display()); // Print each path followed by a comma
+        } else {
+            println!("    {}", path.display()); // Print the last path without a comma
+        }
     }
+    log_debug!("]");
 
     // make a map of id-to-pid --------------------------------------
-    // let id_to_pid_map = make_id_to_pid_map(ingest_paths);
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
@@ -68,6 +75,12 @@ fn main() {
         }
         Err(e) => log_info!("Error processing files: {}", e),
     }
+
+    // prepare json -------------------------------------------------
+    let return_json: String = helper::prepare_json(&_error_paths);
+    // -- on success print json -- don't log the json, but actually print it out
+    println!("{}", return_json);
+    
 }
 
 // let zz: () = the_var; // for reference -- hack to inspect the type of the_var
