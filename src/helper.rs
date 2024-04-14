@@ -234,7 +234,7 @@ pub fn save_to_csv(data: &[Record], output_dir: &str) -> Result<String, String> 
 */
 pub fn prepare_json(
     csv_file_path: Option<String>,
-    error_paths: &[PathBuf],
+    error_paths: Vec<PathBuf>,
     start_instant: Instant,
     utc_now_time: DateTime<Utc>,
 ) -> String {

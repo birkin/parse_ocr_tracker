@@ -49,7 +49,7 @@ fn main() {
     log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    let (ocr_paths, ingest_paths, _error_paths, _other_paths) = helper::find_json_files(source_dir);
+    let (ocr_paths, ingest_paths, error_paths, _other_paths) = helper::find_json_files(source_dir);
     // log_debug!("error_paths: [");
     // for (i, path) in _error_paths.iter().enumerate() {
     //     if i != ocr_paths.len() - 1 {
@@ -89,7 +89,8 @@ fn main() {
 
     // prepare json -------------------------------------------------
     let return_json: String =
-        helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
+        // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
+        helper::prepare_json(csv_file_path, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
