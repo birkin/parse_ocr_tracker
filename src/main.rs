@@ -40,16 +40,16 @@ struct Record {
     pid_url: Option<String>, // populated later
 }
 
-/*  -----------------------------------------------------------------
-    Represents the structure of the ingestion JSON tracker files that just have a pid.
-    The `id` field will be populated by parsing the local-id from the filepath.
-    -----------------------------------------------------------------
-*/
-#[derive(Debug, Deserialize, Serialize)]
-struct IdToPidInfo {
-    id: Option<String>, // populated later
-    pid: String,
-}
+// /*  -----------------------------------------------------------------
+//     Represents the structure of the ingestion JSON tracker files that just have a pid.
+//     The `id` field will be populated by parsing the local-id from the filepath.
+//     -----------------------------------------------------------------
+// */
+// #[derive(Debug, Deserialize, Serialize)]
+// struct IdToPidInfo {
+//     id: Option<String>, // populated later
+//     pid: String,
+// }
 
 // /*  -----------------------------------------------------------------
 //     Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
