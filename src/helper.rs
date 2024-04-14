@@ -1,5 +1,7 @@
 use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 
+use chrono::{DateTime, Utc};
+use chrono_tz::US::Eastern;
 use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
 use std::{
@@ -7,6 +9,7 @@ use std::{
     fs::File,
     io::{self, Read},
     path::{Path, PathBuf},
+    time::Instant,
 };
 use walkdir::WalkDir;
 
@@ -203,33 +206,26 @@ pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
 }
 
 /*  -----------------------------------------------------------------
-    Prepares a JSON file with the error-paths.
+    Prepares a JSON file with datestamp, elapsed, source and output paths, and error-paths.
     -----------------------------------------------------------------
 */
-// use chrono::{DateTime, Utc, FixedOffset};
-use chrono::{DateTime, Utc, FixedOffset};
-
-pub fn prepare_json(_error_paths: &[PathBuf]) -> String {
+pub fn prepare_json(
+    _error_paths: &[PathBuf],
+    start_instant: Instant,
+    utc_now_time: DateTime<Utc>,
+) -> String {
     // -- create the main BTreeMap
     let mut map = BTreeMap::new();
 
-    // -- prep current datetime with timezone
-    let offset = FixedOffset::west_opt(5 * 3600).expect("Invalid timezone offset");
-    let local_date_time: DateTime<FixedOffset> = Utc::now().with_timezone(&offset);
-    let formatted_date_time = local_date_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
+    // -- convert UTC-Time to Eastern-Time (automatically handles DST)
+    let eastern_time = utc_now_time.with_timezone(&Eastern);
+    let formatted_date_time = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
     map.insert("datetime_stamp", formatted_date_time);
 
-    // Add other paths
+    // -- TODO, Add other data
     map.insert("source_path", "foo".to_string());
     map.insert("output_path", "bar".to_string());
 
-    // Convert the BTreeMap into a JSON string
-    match serde_json::to_string_pretty(&map) {
-        Ok(json) => json,
-        Err(e) => format!("Error serializing JSON: {}", e)
-    }
-
-    
     // // -- create a vector of strings
     // let mut error_paths_vec: Vec<String> = Vec::new();
     // for path in error_paths {
@@ -239,4 +235,20 @@ pub fn prepare_json(_error_paths: &[PathBuf]) -> String {
     // let json = serde_json::to_string_pretty(&error_paths_vec)?;
     // println!("{}", json);
     // Ok(())
+
+    // -- finally, add elapsed time
+    let elapsed_seconds: f64 = start_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    let elapsed_string: String = if elapsed_seconds < 60.0 {
+        format!("{:.1} seconds", elapsed_seconds)
+    } else {
+        let elapsed_minutes = elapsed_seconds / 60.0;
+        format!("{:.1} minutes", elapsed_minutes)
+    };
+    map.insert("elapsed_time", elapsed_string);
+
+    // -- onvert the BTreeMap into a JSON string
+    match serde_json::to_string_pretty(&map) {
+        Ok(json) => json,
+        Err(e) => format!("Error serializing output-JSON: {}", e),
+    }
 }
