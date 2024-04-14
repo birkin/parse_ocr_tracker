@@ -5,6 +5,7 @@ use crate::helper::Record;
 use chrono::Utc;
 use clap::{arg, Command};
 use std::env;
+use std::path::PathBuf;
 use std::time::Instant;
 
 /*  -----------------------------------------------------------------
@@ -92,15 +93,24 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // -- process ocr-tracker-files ---------------------------------
-    let data_vector = helper::process_files(ocr_paths, &id_to_pid_map);
-    let data_vector: Vec<Record> = match data_vector {
-        Ok(data) => data,
-        Err(e) => {
-            log_info!("Error processing files: {}", e);
-            return; // or handle the error as needed
-        }
-    };
+    let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map)
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to process the ocr-tracker-files: {}", e);
+            std::process::exit(1); // Exit or handle the error by returning a default value or performing other actions
+        });
+    let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
+    let _rejected_files: Vec<PathBuf> = path_results.rejected_paths;
+
+    // let data_vector = helper::process_files(ocr_paths, &id_to_pid_map);
+    // let data_vector: Vec<Record> = match data_vector {
+    //     Ok(data) => data,
+    //     Err(e) => {
+    //         log_info!("Error processing files: {}", e);
+    //         return; // or handle the error as needed
+    //     }
+    // };
+    // let ocr_data_vector_count: usize = data_vector.len();
 
     // -- save csv --------------------------------------------------
     let csv_file_path = helper::save_to_csv(&data_vector, output_dir);

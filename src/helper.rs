@@ -1,4 +1,5 @@
-use crate::{log_debug, log_info, log_warn}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
+// use crate::{log_debug, log_info, log_warn}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
+use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 
 use chrono::{DateTime, Utc};
 use chrono_tz::US::Eastern;
@@ -9,7 +10,7 @@ use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{self, Read},
+    io::Read,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -155,60 +156,101 @@ pub fn parse_key_from_path(path: &Path) -> String {
     Processes the JSON files, creating the data-vector that'll be used to create the CSV.
     -----------------------------------------------------------------
 */
+pub struct PathResults {
+    pub extracted_data_files: Vec<Record>,
+    pub rejected_paths: Vec<PathBuf>,
+}
+
 pub fn process_files(
-    file_paths: Vec<PathBuf>,
+    ocr_tracker_filepaths: Vec<PathBuf>,
     id_to_pid_map: &BTreeMap<String, String>,
-) -> io::Result<Vec<Record>> {
-    let mut data_vector: Vec<Record> = Vec::new();
-    let mut record_err_count = 0;
-    for path_buf in file_paths {
-        let path: &Path = path_buf.as_path();
-        let key: String = parse_key_from_path(&path);
+) -> Result<PathResults, std::io::Error> {
+    let mut temp_tracker_data_vector: Vec<Record> = Vec::new();
+    let mut temp_rejected_paths: Vec<PathBuf> = Vec::new();
+    for ocr_tracker_filepath_buf in ocr_tracker_filepaths {
+        let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();
+        let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath);
         // read ocr-data --------------------------------------------
-        let mut file = File::open(&path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let record: JsonResult<Record> = serde_json::from_str(&contents);
+        let mut ocr_tracker_file_obj = File::open(&ocr_tracker_filepath)?;
+        let mut ocr_tracker_contents = String::new();
+        ocr_tracker_file_obj.read_to_string(&mut ocr_tracker_contents)?;
+        let record: JsonResult<Record> = serde_json::from_str(&ocr_tracker_contents);
         match record {
             Ok(mut rec) => {
                 // look up pid and url from hashmap -----------------
-                let pid: Option<&String> = id_to_pid_map.get(&key);
+                let pid: Option<&String> = id_to_pid_map.get(&item_num_key);
                 let url: Option<String> = pid
                     .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
                 rec.pid = pid.cloned();
                 rec.pid_url = url;
                 // append record to data-vector --------------------=
-                data_vector.push(rec);
+                temp_tracker_data_vector.push(rec);
             }
             Err(e) => {
                 log_debug!(
                     "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-                    path,
+                    ocr_tracker_filepath,
                     e
                 );
-                record_err_count += 1;
+                temp_rejected_paths.push(ocr_tracker_filepath_buf);
             }
         }
     }
-    log_warn!("record_err_count: {}", record_err_count);
-    Ok(data_vector)
+
+    Ok(PathResults {
+        extracted_data_files: temp_tracker_data_vector,
+        rejected_paths: temp_rejected_paths,
+    })
+
+    // PathResults {
+    //     extracted_data_files: temp_tracker_data_vector,
+    //     rejected_paths: temp_rejected_paths,
+    // }
 } // end fn process_files()
+
+// pub fn process_files(
+//     file_paths: Vec<PathBuf>,
+//     id_to_pid_map: &BTreeMap<String, String>,
+// ) -> io::Result<Vec<Record>> {
+//     let mut data_vector: Vec<Record> = Vec::new();
+//     let mut record_err_count = 0;
+//     for path_buf in file_paths {
+//         let path: &Path = path_buf.as_path();
+//         let key: String = parse_key_from_path(&path);
+//         // read ocr-data --------------------------------------------
+//         let mut file = File::open(&path)?;
+//         let mut contents = String::new();
+//         file.read_to_string(&mut contents)?;
+//         let record: JsonResult<Record> = serde_json::from_str(&contents);
+//         match record {
+//             Ok(mut rec) => {
+//                 // look up pid and url from hashmap -----------------
+//                 let pid: Option<&String> = id_to_pid_map.get(&key);
+//                 let url: Option<String> = pid
+//                     .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
+//                 rec.pid = pid.cloned();
+//                 rec.pid_url = url;
+//                 // append record to data-vector --------------------=
+//                 data_vector.push(rec);
+//             }
+//             Err(e) => {
+//                 log_debug!(
+//                     "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
+//                     path,
+//                     e
+//                 );
+//                 record_err_count += 1;
+//             }
+//         }
+//     }
+//     log_warn!("record_err_count: {}", record_err_count);
+//     Ok(data_vector)
+// } // end fn process_files()
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
     -----------------------------------------------------------------
 */
-// pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
-//     let file_path = format!("{}/tracker_output.csv", output_dir); // Consider more sophisticated file naming
-//     let file = File::create(file_path)?;
-//     let mut wrtr = csv::Writer::from_writer(file);
-//     for record in data {
-//         wrtr.serialize(record)?;
-//     }
-//     wrtr.flush()?;
-//     Ok(())
-// }
-
 pub fn save_to_csv(data: &[Record], output_dir: &str) -> Result<String, String> {
     let file_path = format!("{}/tracker_output.csv", output_dir);
     let file = match File::create(&file_path) {
