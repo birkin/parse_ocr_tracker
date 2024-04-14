@@ -89,7 +89,7 @@ pub fn find_json_files<P: AsRef<Path>>(
         error_paths,
         other_paths,
     )
-}
+} // end fn find_json_files()
 
 /*  -----------------------------------------------------------------
     Creates a hashmap of id-to-pid.
@@ -185,7 +185,7 @@ pub fn process_files(
     }
 
     Ok(data_vector)
-}
+} // end fn process_files()
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
