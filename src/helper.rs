@@ -253,10 +253,7 @@ pub fn prepare_json(
     // -- basic data
     map.insert("source_dir_path".to_string(), json!(source_dir));
     map.insert("output_dir_path".to_string(), json!(output_dir));
-    let log_level_str = format!(
-        "`{}`; change via `$ export LOG_LEVEL=\"debug\"` or \"info\" (default is \"warn\")",
-        log_level
-    );
+    let log_level_str = format!("`{}`; see `--help` for more info", log_level);
     map.insert("log_level".to_string(), json!(log_level_str));
 
     // -- tracker-csv path

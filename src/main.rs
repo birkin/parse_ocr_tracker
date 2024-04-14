@@ -34,10 +34,14 @@ fn main() {
         log_level = "warn".to_string();
     }
 
-    // get args -----------------------------------------------------
+    // setup and read cli-args --------------------------------------
+    let about_text = r#"Info...
+  - Walks `source_dir_path` and creates `(output_dir_path)/tracker_output.csv`.
+  - Logs to console only; default log-level is 'warn'; use `export LOG_LEVEL="debug"` or "info" to see more output.
+  - Useful json is returned, and saved to `(output_dir_path)/tracker_info.json`."#;
     let matches = Command::new("parse_ocr_tracker")
         .version(GIT_COMMIT)
-        .about("Info...\n- Walks source_dir_path and creates tracker_output.csv.\n- Default log-level is 'warn'; use `export LOG_LEVEL=\"debug\"` or \"info\" to see more output.\n- Useful json is returned and saved.")
+        .about(about_text)
         .arg(arg!(-s --source_dir_path <VALUE>).required(true))
         .arg(arg!(-o --output_dir_path <VALUE>).required(true))
         .get_matches();
