@@ -1,4 +1,4 @@
-use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
+use crate::{log_debug, log_info, log_warn}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 
 use chrono::{DateTime, Utc};
 use chrono_tz::US::Eastern;
@@ -160,6 +160,7 @@ pub fn process_files(
     id_to_pid_map: &BTreeMap<String, String>,
 ) -> io::Result<Vec<Record>> {
     let mut data_vector: Vec<Record> = Vec::new();
+    let mut record_err_count = 0;
     for path_buf in file_paths {
         let path: &Path = path_buf.as_path();
         // let key: String = parse_key_from_path(&path);
@@ -181,14 +182,17 @@ pub fn process_files(
                 // appends record to data-vector --------------------
                 data_vector.push(rec);
             }
-            Err(e) => log_debug!(
-                "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-                path,
-                e
-            ),
+            Err(e) => {
+                log_debug!(
+                    "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
+                    path,
+                    e
+                );
+                record_err_count += 1;
+            }
         }
     }
-
+    log_warn!("record_err_count: {}", record_err_count);
     Ok(data_vector)
 } // end fn process_files()
 
@@ -237,6 +241,7 @@ pub fn prepare_json(
     output_dir: &str,
     log_level: String,
     csv_file_path: Option<String>,
+    ocr_data_vector_count: usize,
     error_paths: Vec<PathBuf>,
     start_instant: Instant,
     utc_now_time: DateTime<Utc>,
@@ -258,6 +263,10 @@ pub fn prepare_json(
 
     // -- tracker-csv path
     map.insert("tracker_output_csv_path".to_string(), json!(csv_file_path));
+    map.insert(
+        "ocr_data_vector_count".to_string(),
+        json!(ocr_data_vector_count),
+    );
 
     // -- error-paths
     let mut error_paths_vec: Vec<String> = Vec::new();
