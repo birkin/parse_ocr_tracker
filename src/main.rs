@@ -65,24 +65,6 @@ fn main() {
 
     // get paths ----------------------------------------------------
     let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
-    // log_debug!("error_paths: [");
-    // for (i, path) in _error_paths.iter().enumerate() {
-    //     if i != ocr_paths.len() - 1 {
-    //         println!("    {},", path.display()); // Print each path followed by a comma
-    //     } else {
-    //         println!("    {}", path.display()); // Print the last path without a comma
-    //     }
-    // }
-    // log_debug!("]");
-    // log_debug!("_other_paths: [");
-    // for (i, path) in _other_paths.iter().enumerate() {
-    //     if i != ocr_paths.len() - 1 {
-    //         println!("    {},", path.display()); // Print each path followed by a comma
-    //     } else {
-    //         println!("    {}", path.display()); // Print the last path without a comma
-    //     }
-    // }
-    // log_debug!("]");
     let ocr_tracker_paths_count = ocr_paths.len();
     log_warn!("len(ocr_paths): {}", ocr_tracker_paths_count);
     let _ingest_tracker_paths_count = ingest_paths.len();
@@ -93,7 +75,7 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // -- process ocr-tracker-files ---------------------------------
-    let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map)
+    let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map) // PathResults is a struct just to hold and return the two vectors
         .unwrap_or_else(|e| {
             eprintln!("Failed to process the ocr-tracker-files: {}", e);
             std::process::exit(1); // Exit or handle the error by returning a default value or performing other actions
@@ -101,16 +83,6 @@ fn main() {
     let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
     let _rejected_files: Vec<PathBuf> = path_results.rejected_paths;
-
-    // let data_vector = helper::process_files(ocr_paths, &id_to_pid_map);
-    // let data_vector: Vec<Record> = match data_vector {
-    //     Ok(data) => data,
-    //     Err(e) => {
-    //         log_info!("Error processing files: {}", e);
-    //         return; // or handle the error as needed
-    //     }
-    // };
-    // let ocr_data_vector_count: usize = data_vector.len();
 
     // -- save csv --------------------------------------------------
     let csv_file_path = helper::save_to_csv(&data_vector, output_dir);
