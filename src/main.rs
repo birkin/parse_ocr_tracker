@@ -3,6 +3,7 @@ pub mod logger; // enables the log_debug!() and log_info!() macros
 
 use chrono::Utc;
 use clap::{arg, Command};
+use std::env;
 use std::time::Instant;
 
 /*  -----------------------------------------------------------------
@@ -18,17 +19,25 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
     -----------------------------------------------------------------
 */
 fn main() {
-    // init logger --------------------------------------------------
-    logger::init_logger().unwrap();
-
     // -- create start-times ----------------------------------------
     let start_instant = Instant::now(); // monotonic clock starts
     let datestamp_time = Utc::now(); // for time-zone aware datestamp for output json
 
+    // init logger --------------------------------------------------
+    logger::init_logger().unwrap();
+
+    // grab log-level -----------------------------------------------
+    // -- only needed for json output -- grabbed by logger::init_logger()
+    let mut log_level: String = env::var("LOG_LEVEL").unwrap_or_else(|_| "warn".to_string());
+    log_level = log_level.to_lowercase();
+    if log_level != "debug" && log_level != "info" && log_level != "warn" {
+        log_level = "warn".to_string();
+    }
+
     // get args -----------------------------------------------------
     let matches = Command::new("parse_ocr_tracker")
         .version(GIT_COMMIT)
-        .about("Walks source_dir_path and lists all json files.")
+        .about("Info...\n- Walks source_dir_path and creates tracker_output.csv.\n- Default log-level is 'warn'; use `export LOG_LEVEL=\"debug\"` or \"info\" to see more output.\n- Useful json is returned and saved.")
         .arg(arg!(-s --source_dir_path <VALUE>).required(true))
         .arg(arg!(-o --output_dir_path <VALUE>).required(true))
         .get_matches();
@@ -90,7 +99,7 @@ fn main() {
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, csv_file_path, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 

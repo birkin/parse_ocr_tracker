@@ -235,6 +235,7 @@ pub fn save_to_csv(data: &[Record], output_dir: &str) -> Result<String, String> 
 pub fn prepare_json(
     source_dir: &str,
     output_dir: &str,
+    log_level: String,
     csv_file_path: Option<String>,
     error_paths: Vec<PathBuf>,
     start_instant: Instant,
@@ -249,14 +250,19 @@ pub fn prepare_json(
     map.insert("datetime_stamp".to_string(), json!(formatted_date_time));
     map.insert("time_taken".to_string(), json!("temp_holder")); // the same insert-key will update it later
 
-    // -- TODO, Add other data
-    // map.insert("source_path".to_string(), json!("foo"));
-    // map.insert("output_path".to_string(), json!("bar"));
+    // -- basic data
     map.insert("source_dir_path".to_string(), json!(source_dir));
     map.insert("output_dir_path".to_string(), json!(output_dir));
+    let log_level_str = format!(
+        "`{}`; change via `$ export LOG_LEVEL=\"debug\"` or \"info\" (default is \"warn\")",
+        log_level
+    );
+    map.insert("log_level".to_string(), json!(log_level_str));
+
+    // -- tracker-csv path
     map.insert("tracker_output_csv_path".to_string(), json!(csv_file_path));
 
-    // -- create a vector of strings
+    // -- error-paths
     let mut error_paths_vec: Vec<String> = Vec::new();
     for path in error_paths {
         let path_str = path.to_string_lossy().to_string();
