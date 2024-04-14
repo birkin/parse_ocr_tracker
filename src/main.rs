@@ -2,7 +2,8 @@ mod helper;
 pub mod logger; // enables the log_debug!() and log_info!() macros
 
 use crate::helper::Record;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
+use chrono_tz::{Tz, US::Eastern};
 use clap::{arg, Command};
 use std::env;
 use std::path::PathBuf;
@@ -22,8 +23,10 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
 */
 fn main() {
     // -- create start-times ----------------------------------------
-    let start_instant = Instant::now(); // monotonic clock starts
+    let start_instant = Instant::now(); // monotonic clock starts -- passed to prepare_json()
     let datestamp_time = Utc::now(); // for time-zone aware datestamp for output json
+    let eastern_time: DateTime<Tz> = datestamp_time.with_timezone(&Eastern); // converts UTC-Time to Eastern-Time (automatically handles DST)
+    let formatted_date_time: String = eastern_time.format("%Y-%m-%d_%H:%M:%S_%:z").to_string();
 
     // init logger --------------------------------------------------
     logger::init_logger().unwrap();
@@ -90,7 +93,7 @@ fn main() {
     let rejected_files_count: usize = rejected_files.len();
 
     // -- save csv --------------------------------------------------
-    let csv_file_path = helper::save_to_csv(&data_vector, output_dir);
+    let csv_file_path = helper::save_to_csv(&data_vector, output_dir, &formatted_date_time);
     let csv_file_path: Option<String> = match csv_file_path {
         Ok(file_path) => {
             log_info!("CSV saved successfully at: {}", file_path);
@@ -105,7 +108,7 @@ fn main() {
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, rejected_files_count, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, rejected_files_count, error_paths, start_instant, formatted_date_time);
     println!("{}", return_json);
 }
 
