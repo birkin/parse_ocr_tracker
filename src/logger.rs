@@ -33,7 +33,7 @@ use std::env;
 pub static LOGGER: SimpleLogger = SimpleLogger;
 
 /*
-The two macros below allow me to use logging statements like:
+The macros below allow me to use logging statements like:
 `log_debug!("some message");` and `log_info!("some message");`
 
 $: The dollar sign is used to denote the beginning of a macro variable or a repetition sequence.
@@ -50,6 +50,13 @@ $arg is the name of the variable that will hold the input passed to the macro.
 */
 
 #[macro_export]
+macro_rules! log_debug {
+    ($($arg:tt)*) => {
+        log::debug!("{}", format_args!($($arg)*))
+    };
+}
+
+#[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {
         log::info!("{}", format_args!($($arg)*))
@@ -57,9 +64,9 @@ macro_rules! log_info {
 }
 
 #[macro_export]
-macro_rules! log_debug {
+macro_rules! log_warn {
     ($($arg:tt)*) => {
-        log::debug!("{}", format_args!($($arg)*))
+        log::warn!("{}", format_args!($($arg)*))
     };
 }
 
@@ -89,10 +96,12 @@ impl log::Log for SimpleLogger {
 }
 
 pub fn init_logger() -> Result<(), SetLoggerError> {
-    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "debug".to_string());
+    // let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "debug".to_string());
+    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "warn".to_string());
     let level_filter = match log_level.to_lowercase().as_str() {
+        "debug" => LevelFilter::Debug,
         "info" => LevelFilter::Info,
-        _ => LevelFilter::Debug,
+        _ => LevelFilter::Warn,
     };
 
     /*

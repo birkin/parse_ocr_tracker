@@ -196,15 +196,36 @@ pub fn process_files(
     Saves the data-vector to a CSV file.
     -----------------------------------------------------------------
 */
-pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
-    let file_path = format!("{}/tracker_output.csv", output_dir); // Consider more sophisticated file naming
-    let file = File::create(file_path)?;
+// pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
+//     let file_path = format!("{}/tracker_output.csv", output_dir); // Consider more sophisticated file naming
+//     let file = File::create(file_path)?;
+//     let mut wrtr = csv::Writer::from_writer(file);
+//     for record in data {
+//         wrtr.serialize(record)?;
+//     }
+//     wrtr.flush()?;
+//     Ok(())
+// }
+
+pub fn save_to_csv(data: &[Record], output_dir: &str) -> Result<String, String> {
+    let file_path = format!("{}/tracker_output.csv", output_dir);
+    let file = match File::create(&file_path) {
+        Ok(file) => file,
+        Err(e) => return Err(format!("Failed to create file: {}", e)),
+    };
     let mut wrtr = csv::Writer::from_writer(file);
+
     for record in data {
-        wrtr.serialize(record)?;
+        if let Err(e) = wrtr.serialize(record) {
+            return Err(format!("Failed to serialize record: {}", e));
+        }
     }
-    wrtr.flush()?;
-    Ok(())
+
+    if let Err(e) = wrtr.flush() {
+        return Err(format!("Failed to flush writer: {}", e));
+    }
+
+    Ok(file_path)
 }
 
 /*  -----------------------------------------------------------------
@@ -212,11 +233,15 @@ pub fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
     -----------------------------------------------------------------
 */
 pub fn prepare_json(
-    error_paths: &[PathBuf],
+    source_dir: &str,
+    output_dir: &str,
+    log_level: String,
+    csv_file_path: Option<String>,
+    error_paths: Vec<PathBuf>,
     start_instant: Instant,
     utc_now_time: DateTime<Utc>,
 ) -> String {
-    // -- create the main BTreeMap
+    // -- create the main Map
     let mut map = IndexMap::<String, Value>::new();
 
     // -- convert UTC-Time to Eastern-Time (automatically handles DST)
@@ -225,11 +250,16 @@ pub fn prepare_json(
     map.insert("datetime_stamp".to_string(), json!(formatted_date_time));
     map.insert("time_taken".to_string(), json!("temp_holder")); // the same insert-key will update it later
 
-    // -- TODO, Add other data
-    map.insert("source_path".to_string(), json!("foo"));
-    map.insert("output_path".to_string(), json!("bar"));
+    // -- basic data
+    map.insert("source_dir_path".to_string(), json!(source_dir));
+    map.insert("output_dir_path".to_string(), json!(output_dir));
+    let log_level_str = format!("`{}`; see `--help` for more info", log_level);
+    map.insert("log_level".to_string(), json!(log_level_str));
 
-    // -- create a vector of strings
+    // -- tracker-csv path
+    map.insert("tracker_output_csv_path".to_string(), json!(csv_file_path));
+
+    // -- error-paths
     let mut error_paths_vec: Vec<String> = Vec::new();
     for path in error_paths {
         let path_str = path.to_string_lossy().to_string();

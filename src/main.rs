@@ -3,6 +3,7 @@ pub mod logger; // enables the log_debug!() and log_info!() macros
 
 use chrono::Utc;
 use clap::{arg, Command};
+use std::env;
 use std::time::Instant;
 
 /*  -----------------------------------------------------------------
@@ -18,17 +19,29 @@ include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo
     -----------------------------------------------------------------
 */
 fn main() {
-    // init logger --------------------------------------------------
-    logger::init_logger().unwrap();
-
     // -- create start-times ----------------------------------------
     let start_instant = Instant::now(); // monotonic clock starts
     let datestamp_time = Utc::now(); // for time-zone aware datestamp for output json
 
-    // get args -----------------------------------------------------
+    // init logger --------------------------------------------------
+    logger::init_logger().unwrap();
+
+    // grab log-level -----------------------------------------------
+    // -- only needed for json output -- grabbed by logger::init_logger()
+    let mut log_level: String = env::var("LOG_LEVEL").unwrap_or_else(|_| "warn".to_string());
+    log_level = log_level.to_lowercase();
+    if log_level != "debug" && log_level != "info" && log_level != "warn" {
+        log_level = "warn".to_string();
+    }
+
+    // setup and read cli-args --------------------------------------
+    let about_text = r#"Info...
+  - Walks `source_dir_path` and creates `(output_dir_path)/tracker_output.csv`.
+  - Logs to console only; default log-level is 'warn'; use `export LOG_LEVEL="debug"` or "info" to see more output.
+  - Useful json is returned, and saved to `(output_dir_path)/tracker_info.json`."#;
     let matches = Command::new("parse_ocr_tracker")
         .version(GIT_COMMIT)
-        .about("Walks source_dir_path and lists all json files.")
+        .about(about_text)
         .arg(arg!(-s --source_dir_path <VALUE>).required(true))
         .arg(arg!(-o --output_dir_path <VALUE>).required(true))
         .get_matches();
@@ -49,7 +62,7 @@ fn main() {
     log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    let (ocr_paths, ingest_paths, _error_paths, _other_paths) = helper::find_json_files(source_dir);
+    let (ocr_paths, ingest_paths, error_paths, _other_paths) = helper::find_json_files(source_dir);
     // log_debug!("error_paths: [");
     // for (i, path) in _error_paths.iter().enumerate() {
     //     if i != ocr_paths.len() - 1 {
@@ -73,18 +86,24 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
+    let mut csv_file_path: Option<String> = None; // will be updated and used in return-json
     match helper::process_files(ocr_paths, &id_to_pid_map) {
         Ok(data_vector) => {
-            if let Err(e) = helper::save_to_csv(&data_vector, output_dir) {
-                log_info!("Error saving to CSV: {}", e);
+            match helper::save_to_csv(&data_vector, output_dir) {
+                Ok(file_path) => {
+                    log_info!("CSV saved successfully at: {}", file_path);
+                    csv_file_path = Some(file_path); // Capture the filepath here
+                }
+                Err(e) => log_info!("Error saving to CSV: {}", e),
             }
         }
         Err(e) => log_info!("Error processing files: {}", e),
     }
 
     // prepare json -------------------------------------------------
-    let return_json: String = helper::prepare_json(&_error_paths, start_instant, datestamp_time);
-    // -- on success print json -- don't log the json, but actually print it out
+    let return_json: String =
+        // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
