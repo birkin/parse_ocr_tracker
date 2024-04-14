@@ -5,6 +5,7 @@ use crate::helper::Record;
 use chrono::Utc;
 use clap::{arg, Command};
 use std::env;
+use std::path::PathBuf;
 use std::time::Instant;
 
 /*  -----------------------------------------------------------------
@@ -39,7 +40,7 @@ fn main() {
     let about_text = r#"Info...
   - Walks `source_dir_path` and creates `(output_dir_path)/tracker_output.csv`.
   - Logs to console only; default log-level is 'warn'; use `export LOG_LEVEL="debug"` or "info" to see more output.
-  - Useful json is returned, and saved to `(output_dir_path)/tracker_info.json`."#;
+  - Useful json is returned with paths, counts, and error-filepaths."#;
     let matches = Command::new("parse_ocr_tracker")
         .version(GIT_COMMIT)
         .about(about_text)
@@ -64,26 +65,8 @@ fn main() {
 
     // get paths ----------------------------------------------------
     let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
-    // log_debug!("error_paths: [");
-    // for (i, path) in _error_paths.iter().enumerate() {
-    //     if i != ocr_paths.len() - 1 {
-    //         println!("    {},", path.display()); // Print each path followed by a comma
-    //     } else {
-    //         println!("    {}", path.display()); // Print the last path without a comma
-    //     }
-    // }
-    // log_debug!("]");
-    // log_debug!("_other_paths: [");
-    // for (i, path) in _other_paths.iter().enumerate() {
-    //     if i != ocr_paths.len() - 1 {
-    //         println!("    {},", path.display()); // Print each path followed by a comma
-    //     } else {
-    //         println!("    {}", path.display()); // Print the last path without a comma
-    //     }
-    // }
-    // log_debug!("]");
     let ocr_tracker_paths_count = ocr_paths.len();
-    log_warn!("len(ocr_paths): {}", ocr_tracker_paths_count);
+    log_debug!("len(ocr_paths): {}", ocr_tracker_paths_count);
     let _ingest_tracker_paths_count = ingest_paths.len();
     let _error_tracker_paths_count = error_paths.len();
     let _other_json_paths_count = other_paths.len();
@@ -92,15 +75,19 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // -- process ocr-tracker-files ---------------------------------
-    let data_vector = helper::process_files(ocr_paths, &id_to_pid_map);
-    let data_vector: Vec<Record> = match data_vector {
-        Ok(data) => data,
-        Err(e) => {
-            log_info!("Error processing files: {}", e);
-            return; // or handle the error as needed
-        }
-    };
+    let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map) // PathResults is a struct just to hold and return the two vectors
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to process the ocr-tracker-files: {}", e);
+            std::process::exit(1); // Exit or handle the error by returning a default value or performing other actions
+        });
+    let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
+    let rejected_files: Vec<PathBuf> = path_results.rejected_paths;
+    log_debug!("all rejected_file paths...");
+    for file in &rejected_files {
+        log_debug!("{:?}", file);
+    }
+    let rejected_files_count: usize = rejected_files.len();
 
     // -- save csv --------------------------------------------------
     let csv_file_path = helper::save_to_csv(&data_vector, output_dir);
@@ -118,7 +105,7 @@ fn main() {
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, rejected_files_count, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
