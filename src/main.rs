@@ -1,6 +1,7 @@
 mod helper;
 pub mod logger; // enables the log_debug!() and log_info!() macros
 
+use crate::helper::Record;
 use chrono::Utc;
 use clap::{arg, Command};
 use std::env;
@@ -62,7 +63,7 @@ fn main() {
     log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
-    let (ocr_paths, ingest_paths, error_paths, _other_paths) = helper::find_json_files(source_dir);
+    let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
     // log_debug!("error_paths: [");
     // for (i, path) in _error_paths.iter().enumerate() {
     //     if i != ocr_paths.len() - 1 {
@@ -81,29 +82,43 @@ fn main() {
     //     }
     // }
     // log_debug!("]");
+    let ocr_tracker_paths_count = ocr_paths.len();
+    log_warn!("len(ocr_paths): {}", ocr_tracker_paths_count);
+    let _ingest_tracker_paths_count = ingest_paths.len();
+    let _error_tracker_paths_count = error_paths.len();
+    let _other_json_paths_count = other_paths.len();
 
     // make a map of id-to-pid --------------------------------------
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
-    // process files ------------------------------------------------
-    let mut csv_file_path: Option<String> = None; // will be updated and used in return-json
-    match helper::process_files(ocr_paths, &id_to_pid_map) {
-        Ok(data_vector) => {
-            match helper::save_to_csv(&data_vector, output_dir) {
-                Ok(file_path) => {
-                    log_info!("CSV saved successfully at: {}", file_path);
-                    csv_file_path = Some(file_path); // Capture the filepath here
-                }
-                Err(e) => log_info!("Error saving to CSV: {}", e),
-            }
+    // -- process ocr-tracker-files ---------------------------------
+    let data_vector = helper::process_files(ocr_paths, &id_to_pid_map);
+    let data_vector: Vec<Record> = match data_vector {
+        Ok(data) => data,
+        Err(e) => {
+            log_info!("Error processing files: {}", e);
+            return; // or handle the error as needed
         }
-        Err(e) => log_info!("Error processing files: {}", e),
-    }
+    };
+    let ocr_data_vector_count: usize = data_vector.len();
+
+    // -- save csv --------------------------------------------------
+    let csv_file_path = helper::save_to_csv(&data_vector, output_dir);
+    let csv_file_path: Option<String> = match csv_file_path {
+        Ok(file_path) => {
+            log_info!("CSV saved successfully at: {}", file_path);
+            Some(file_path)
+        }
+        Err(e) => {
+            log_info!("Error saving to CSV: {}", e);
+            None // or handle the error as needed
+        }
+    };
 
     // prepare json -------------------------------------------------
     let return_json: String =
         // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, error_paths, start_instant, datestamp_time);
+        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, error_paths, start_instant, datestamp_time);
     println!("{}", return_json);
 }
 
