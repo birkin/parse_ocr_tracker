@@ -1,23 +1,13 @@
-// Assuming `logger` is declared as `pub mod logger;` in `main.rs`
-use crate::{log_debug, log_info}; // Import logging functions
+use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 
+use serde::{Deserialize, Serialize};
 use serde_json::Result as JsonResult;
 use std::{
     collections::BTreeMap,
     fs::File,
     io::{self, Read},
-    // io::Read,
     path::{Path, PathBuf},
 };
-
-// use std::{
-
-//     fs::File,
-//     io::{self, Read},
-//     path::{Path, PathBuf},
-// };
-
-use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 /*  -----------------------------------------------------------------
@@ -139,7 +129,9 @@ pub fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> 
 
 /*  -----------------------------------------------------------------
     Parses out `HH001545_0001` from a path like: `/path/to/HH001545/HH001545_0001/HH001545_0001-ingest_complete.json`
-    Called by make_id_to_pid_map() to create the hashmap, and then by process_files() to get the key to do the hashmap lookup.
+    Called by:
+        - make_id_to_pid_map() to create the hashmap
+        - and then by process_files() to get the key to do the hashmap lookup.
     -----------------------------------------------------------------
 */
 pub fn parse_key_from_path(path: &Path) -> String {
@@ -194,7 +186,6 @@ pub fn process_files(
 
     Ok(data_vector)
 }
-
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
