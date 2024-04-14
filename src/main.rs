@@ -2,14 +2,14 @@ mod helper;
 pub mod logger; // enables the log_debug!() and log_info!() macros
 
 use clap::{arg, Command};
-use serde::{Deserialize, Serialize};
-use serde_json::Result as JsonResult;
-use std::{
-    collections::BTreeMap,
-    fs::File,
-    io::{self, Read},
-    path::{Path, PathBuf},
-};
+// use serde::{Deserialize, Serialize};
+// use serde_json::Result as JsonResult;
+// use std::{
+//     // collections::BTreeMap,
+//     // fs::File,
+//     // io::{self, Read},
+//     // path::{Path, PathBuf},
+// };
 // use walkdir::WalkDir;
 
 /*  -----------------------------------------------------------------
@@ -19,26 +19,26 @@ use std::{
 */
 include!(concat!(env!("OUT_DIR"), "/git_commit.rs")); // OUT_DIR is set by cargo; is the target dir; and is only available during build process
 
-/*  -----------------------------------------------------------------
-    Represents the structure of the OCR JSON tracker files being parsed.
-    Note that the `pid` and `pid_url` fields are not part of the original JSON files; they're populated later.
-    -----------------------------------------------------------------
-*/
-#[derive(Debug, Deserialize, Serialize)]
-struct Record {
-    orientation: i32,
-    orientation_conf: f64,
-    script: String,
-    script_conf: f64,
-    image_name: String,
-    word_count: i32,
-    avg_confidence: f64,
-    below_90: f64,
-    below_60: f64,
-    below_30: f64,
-    pid: Option<String>,     // populated later
-    pid_url: Option<String>, // populated later
-}
+// /*  -----------------------------------------------------------------
+//     Represents the structure of the OCR JSON tracker files being parsed.
+//     Note that the `pid` and `pid_url` fields are not part of the original JSON files; they're populated later.
+//     -----------------------------------------------------------------
+// */
+// #[derive(Debug, Deserialize, Serialize)]
+// struct Record {
+//     orientation: i32,
+//     orientation_conf: f64,
+//     script: String,
+//     script_conf: f64,
+//     image_name: String,
+//     word_count: i32,
+//     avg_confidence: f64,
+//     below_90: f64,
+//     below_60: f64,
+//     below_30: f64,
+//     pid: Option<String>,     // populated later
+//     pid_url: Option<String>, // populated later
+// }
 
 // /*  -----------------------------------------------------------------
 //     Represents the structure of the ingestion JSON tracker files that just have a pid.
@@ -104,59 +104,60 @@ struct Record {
 //     id_to_pid_map
 // }
 
-/*  -----------------------------------------------------------------
-    Processes the JSON files, creating the data-vector that'll be used to create the CSV.
-    -----------------------------------------------------------------
-*/
-fn process_files(
-    file_paths: Vec<PathBuf>,
-    id_to_pid_map: &BTreeMap<String, String>,
-) -> io::Result<Vec<Record>> {
-    let mut data_vector: Vec<Record> = Vec::new();
-    for path_buf in file_paths {
-        let path: &Path = path_buf.as_path();
-        // let key: String = parse_key_from_path(&path);
-        let key: String = helper::parse_key_from_path(&path);
-        // reads ocr-data -------------------------------------------
-        let mut file = File::open(&path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let record: JsonResult<Record> = serde_json::from_str(&contents);
-        match record {
-            Ok(mut rec) => {
-                // looks up pid and url from hashmap ----------------
-                let pid: Option<&String> = id_to_pid_map.get(&key);
-                let url: Option<String> = pid
-                    .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
-                rec.pid = pid.cloned();
-                rec.pid_url = url;
-                // appends record to data-vector --------------------
-                data_vector.push(rec);
-            }
-            Err(e) => log_debug!(
-                "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-                path,
-                e
-            ),
-        }
-    }
+// /*  -----------------------------------------------------------------
+//     Processes the JSON files, creating the data-vector that'll be used to create the CSV.
+//     -----------------------------------------------------------------
+// */
+// fn process_files(
+//     file_paths: Vec<PathBuf>,
+//     id_to_pid_map: &BTreeMap<String, String>,
+// ) -> io::Result<Vec<Record>> {
+//     let mut data_vector: Vec<Record> = Vec::new();
+//     for path_buf in file_paths {
+//         let path: &Path = path_buf.as_path();
+//         // let key: String = parse_key_from_path(&path);
+//         let key: String = helper::parse_key_from_path(&path);
+//         // reads ocr-data -------------------------------------------
+//         let mut file = File::open(&path)?;
+//         let mut contents = String::new();
+//         file.read_to_string(&mut contents)?;
+//         let record: JsonResult<Record> = serde_json::from_str(&contents);
+//         match record {
+//             Ok(mut rec) => {
+//                 // looks up pid and url from hashmap ----------------
+//                 let pid: Option<&String> = id_to_pid_map.get(&key);
+//                 let url: Option<String> = pid
+//                     .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
+//                 rec.pid = pid.cloned();
+//                 rec.pid_url = url;
+//                 // appends record to data-vector --------------------
+//                 data_vector.push(rec);
+//             }
+//             Err(e) => log_debug!(
+//                 "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
+//                 path,
+//                 e
+//             ),
+//         }
+//     }
 
-    Ok(data_vector)
-}
-/*  -----------------------------------------------------------------
-    Saves the data-vector to a CSV file.
-    -----------------------------------------------------------------
-*/
-fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
-    let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
-    let file = File::create(file_path)?;
-    let mut wrtr = csv::Writer::from_writer(file);
-    for record in data {
-        wrtr.serialize(record)?;
-    }
-    wrtr.flush()?;
-    Ok(())
-}
+//     Ok(data_vector)
+// }
+
+// /*  -----------------------------------------------------------------
+//     Saves the data-vector to a CSV file.
+//     -----------------------------------------------------------------
+// */
+// fn save_to_csv(data: &[Record], output_dir: &str) -> io::Result<()> {
+//     let file_path = format!("{}/output.csv", output_dir); // Consider more sophisticated file naming
+//     let file = File::create(file_path)?;
+//     let mut wrtr = csv::Writer::from_writer(file);
+//     for record in data {
+//         wrtr.serialize(record)?;
+//     }
+//     wrtr.flush()?;
+//     Ok(())
+// }
 
 /*  -----------------------------------------------------------------
     Main function.
@@ -207,9 +208,9 @@ fn main() {
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
 
     // process files ------------------------------------------------
-    match process_files(ocr_paths, &id_to_pid_map) {
+    match helper::process_files(ocr_paths, &id_to_pid_map) {
         Ok(data_vector) => {
-            if let Err(e) = save_to_csv(&data_vector, output_dir) {
+            if let Err(e) = helper::save_to_csv(&data_vector, output_dir) {
                 log_info!("Error saving to CSV: {}", e);
             }
         }
