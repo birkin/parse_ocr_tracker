@@ -1,0 +1,10 @@
+## explanations: <https://github.com/rust-lang/rustfmt/blob/master/Configurations.md>
+
+
+## commented out items only available in nightly channel.
+# brace_style = "PreferSameLine"
+# imports_granularity = "Module"
+
+chain_width = 100
+fn_params_layout = "Compressed"
+max_width = 110
