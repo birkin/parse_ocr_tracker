@@ -85,11 +85,15 @@ fn main() {
     println!("elapsed_seconds after make_id_to_pid_map(): {}", elapsed_seconds);
 
     // -- process ocr-tracker-files ---------------------------------
+    let process_files_instant = Instant::now();
     let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map) // PathResults is a struct just to hold and return the two vectors
         .unwrap_or_else(|e| {
             eprintln!("Failed to process the ocr-tracker-files: {}", e);
             std::process::exit(1); // Exit or handle the error by returning a default value or performing other actions
         });
+    let elapsed_seconds: f64 = process_files_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    println!("elapsed_seconds after process_files_instant(): {}", elapsed_seconds);
+
     let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
     let rejected_files: Vec<PathBuf> = path_results.rejected_paths;
