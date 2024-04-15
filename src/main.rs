@@ -67,7 +67,11 @@ fn main() {
     log_info!("output-arg: {:?}", output_dir);
 
     // get paths ----------------------------------------------------
+    let find_json_files_start_instant = Instant::now();
     let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
+    let elapsed_seconds: f64 = find_json_files_start_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    println!("elapsed_seconds after find_json_files(): {}", elapsed_seconds);
+
     let ocr_tracker_paths_count = ocr_paths.len();
     log_debug!("len(ocr_paths): {}", ocr_tracker_paths_count);
     let _ingest_tracker_paths_count = ingest_paths.len();
@@ -75,7 +79,10 @@ fn main() {
     let _other_json_paths_count = other_paths.len();
 
     // make a map of id-to-pid --------------------------------------
+    let make_id_to_pid_map_instant = Instant::now();
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
+    let elapsed_seconds: f64 = make_id_to_pid_map_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    println!("elapsed_seconds after make_id_to_pid_map(): {}", elapsed_seconds);
 
     // -- process ocr-tracker-files ---------------------------------
     let path_results: helper::PathResults = helper::process_files(ocr_paths, &id_to_pid_map) // PathResults is a struct just to hold and return the two vectors
