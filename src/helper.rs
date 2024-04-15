@@ -47,9 +47,7 @@ struct IdToPidInfo {
     Finds all files in the given directory that end with "ocr_complete.json" or "ingest_complete.json".
     -----------------------------------------------------------------
 */
-pub fn find_json_files<P: AsRef<Path>>(
-    path: P,
-) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
+pub fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
     log_debug!("starting find_json_files()");
     // -- setup data-vectors
     let mut ocr_complete_paths = Vec::new();
@@ -57,11 +55,7 @@ pub fn find_json_files<P: AsRef<Path>>(
     let mut error_paths = Vec::new();
     let mut other_paths = Vec::new();
     // -- take a walk
-    for entry in WalkDir::new(path)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_file())
-    {
+    for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()).filter(|e| e.path().is_file()) {
         let path = entry.into_path();
         if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
             if file_name.ends_with("ocr_complete.json") {
@@ -160,8 +154,7 @@ pub struct PathResults {
 }
 
 pub fn process_files(
-    ocr_tracker_filepaths: Vec<PathBuf>,
-    id_to_pid_map: &BTreeMap<String, String>,
+    ocr_tracker_filepaths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>,
 ) -> Result<PathResults, std::io::Error> {
     // set up the vectors to hold the return-data -------------------
     let mut temp_tracker_data_vector: Vec<Record> = Vec::new();
@@ -179,8 +172,8 @@ pub fn process_files(
             Ok(mut rec) => {
                 // look up pid and url from hashmap -----------------
                 let pid: Option<&String> = id_to_pid_map.get(&item_num_key);
-                let url: Option<String> = pid
-                    .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
+                let url: Option<String> =
+                    pid.map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
                 rec.pid = pid.cloned();
                 rec.pid_url = url;
                 // append record to data-vector ---------------------
@@ -207,11 +200,7 @@ pub fn process_files(
     Saves the data-vector to a CSV file.
     -----------------------------------------------------------------
 */
-pub fn save_to_csv(
-    data: &[Record],
-    output_dir: &str,
-    formatted_date_time: &str,
-) -> Result<String, String> {
+pub fn save_to_csv(data: &[Record], output_dir: &str, formatted_date_time: &str) -> Result<String, String> {
     // -- update the formatted_date_time
     let formatted_date_time: &str = formatted_date_time.split_whitespace().next().unwrap();
     let trimmed_datetime: &str = &formatted_date_time[0..19]; // slice up to the excluded timezone
@@ -242,15 +231,9 @@ pub fn save_to_csv(
     -----------------------------------------------------------------
 */
 pub fn prepare_json(
-    source_dir: &str,
-    output_dir: &str,
-    log_level: String,
-    csv_file_path: Option<String>,
-    ocr_data_vector_count: usize,
-    rejected_files_count: usize,
-    error_paths: Vec<PathBuf>,
-    start_instant: Instant,
-    formatted_date_time: String,
+    source_dir: &str, output_dir: &str, log_level: String, csv_file_path: Option<String>,
+    ocr_data_vector_count: usize, rejected_files_count: usize, error_paths: Vec<PathBuf>,
+    start_instant: Instant, formatted_date_time: String,
 ) -> String {
     // -- create the main Map
     let mut map = IndexMap::<String, Value>::new();
@@ -270,10 +253,7 @@ pub fn prepare_json(
 
     // -- tracker-csv path
     map.insert("tracker_output_csv_path".to_string(), json!(csv_file_path));
-    map.insert(
-        "ocr_data_vector_count".to_string(),
-        json!(ocr_data_vector_count),
-    );
+    map.insert("ocr_data_vector_count".to_string(), json!(ocr_data_vector_count));
 
     // -- rejected-files count
     map.insert(
