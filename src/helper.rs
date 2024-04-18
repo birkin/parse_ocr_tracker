@@ -397,6 +397,7 @@ pub fn prepare_json(
 
     // -- finally, update elapsed time value (the key was created above)
     let elapsed_seconds: f64 = start_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    log_info!("TOTAL elapsed_seconds: {}", elapsed_seconds);
     let elapsed_string: String = if elapsed_seconds < 60.0 {
         format!("{:.1} seconds", elapsed_seconds)
     } else {

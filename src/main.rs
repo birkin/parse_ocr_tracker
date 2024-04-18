@@ -70,7 +70,7 @@ fn main() {
     let find_json_files_start_instant = Instant::now();
     let (ocr_paths, ingest_paths, error_paths, other_paths) = helper::find_json_files(source_dir);
     let elapsed_seconds: f64 = find_json_files_start_instant.elapsed().as_secs_f64(); // uses monotonic clock
-    log_debug!("elapsed_seconds after find_json_files(): {}", elapsed_seconds);
+    println!("json-paths gathered (took, {} seconds)", elapsed_seconds);
 
     let ocr_tracker_paths_count = ocr_paths.len();
     log_debug!("len(ocr_paths): {}", ocr_tracker_paths_count);
@@ -82,7 +82,7 @@ fn main() {
     let make_id_to_pid_map_instant = Instant::now();
     let id_to_pid_map = helper::make_id_to_pid_map(ingest_paths);
     let elapsed_seconds: f64 = make_id_to_pid_map_instant.elapsed().as_secs_f64(); // uses monotonic clock
-    log_debug!("elapsed_seconds after make_id_to_pid_map(): {}", elapsed_seconds);
+    println!("id-to-pid-map created (took, {} seconds", elapsed_seconds);
 
     // -- process ocr-tracker-files ---------------------------------
     let process_files_instant = Instant::now();
@@ -92,10 +92,7 @@ fn main() {
             std::process::exit(1); // Exit or handle the error by returning a default value or performing other actions
         });
     let elapsed_seconds: f64 = process_files_instant.elapsed().as_secs_f64(); // uses monotonic clock
-    log_debug!(
-        "elapsed_seconds after process_files_instant(): {}",
-        elapsed_seconds
-    );
+    println!("ocr-stats gathered (took {} seconds)", elapsed_seconds);
 
     let data_vector: Vec<Record> = path_results.extracted_data_files;
     let ocr_data_vector_count: usize = data_vector.len();
@@ -107,6 +104,7 @@ fn main() {
     let rejected_files_count: usize = rejected_files.len();
 
     // -- save csv --------------------------------------------------
+    let save_csv_instant = Instant::now();
     let csv_file_path = helper::save_to_csv(&data_vector, output_dir, &formatted_date_time);
     let csv_file_path: Option<String> = match csv_file_path {
         Ok(file_path) => {
@@ -118,11 +116,24 @@ fn main() {
             None // or handle the error as needed
         }
     };
+    let elapsed_seconds: f64 = save_csv_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    println!("csv saved (took {} seconds)", elapsed_seconds);
 
     // prepare json -------------------------------------------------
-    let return_json: String =
-        // helper::prepare_json(csv_file_path, &_error_paths, start_instant, datestamp_time);
-        helper::prepare_json(source_dir, output_dir, log_level, csv_file_path, ocr_data_vector_count, rejected_files_count, error_paths, start_instant, formatted_date_time);
+    let prepare_json_instant = Instant::now();
+    let return_json: String = helper::prepare_json(
+        source_dir,
+        output_dir,
+        log_level,
+        csv_file_path,
+        ocr_data_vector_count,
+        rejected_files_count,
+        error_paths,
+        start_instant,
+        formatted_date_time,
+    );
+    let elapsed_seconds: f64 = prepare_json_instant.elapsed().as_secs_f64(); // uses monotonic clock
+    println!("json prepared (took {} seconds)", elapsed_seconds);
     println!("{}", return_json);
 }
 
