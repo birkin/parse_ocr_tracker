@@ -51,12 +51,29 @@ struct IdToPidInfo {
 pub fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>, Vec<PathBuf>) {
     log_debug!("starting find_json_files()");
 
+    // let entries: Vec<PathBuf> = WalkDir::new(path)
+    //     .into_iter()
+    //     .filter_map(|e| e.ok())
+    //     .filter(|e| e.path().is_file())
+    //     .map(|e| e.into_path())
+    //     .collect();
+
     let entries: Vec<PathBuf> = WalkDir::new(path)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .filter(|e| e.path().is_file())
+        .filter(|e| {
+            if let Some(file_name) = e.path().file_name().and_then(|n| n.to_str()) {
+                file_name.ends_with("ocr_complete.json") ||
+                file_name.ends_with("ingest_complete.json") ||
+                file_name.contains("error")
+            } else {
+                false
+            }
+        })
         .map(|e| e.into_path())
         .collect();
+
 
     // Use into_par_iter to consume entries and yield owned PathBufs
     let (mut ocr_complete_paths, others): (Vec<PathBuf>, Vec<PathBuf>) =
