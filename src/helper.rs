@@ -1,6 +1,6 @@
 use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 use indexmap::IndexMap;
-use rayon::{iter::Either, prelude::*};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Result as JsonResult, Value};
 use std::{
