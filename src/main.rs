@@ -133,7 +133,7 @@ fn main() {
         formatted_date_time,
     );
     let elapsed_seconds: f64 = prepare_json_instant.elapsed().as_secs_f64(); // uses monotonic clock
-    println!("json prepared (took {} seconds)", elapsed_seconds);
+    println!("final json prepared (took {} seconds)", elapsed_seconds);
     println!("{}", return_json);
 }
 
