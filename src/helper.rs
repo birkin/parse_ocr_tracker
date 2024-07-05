@@ -84,6 +84,7 @@ pub fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, 
     log_info!("len-error_paths: {}", error_paths.len());
     log_info!("len-other_paths: {}", other_paths.len());
 
+    // return the four vectors
     (
         ocr_complete_paths,
         ingest_complete_paths,
@@ -99,7 +100,7 @@ pub fn find_json_files<P: AsRef<Path>>(path: P) -> (Vec<PathBuf>, Vec<PathBuf>, 
 */
 pub fn make_id_to_pid_map(file_paths: Vec<PathBuf>) -> BTreeMap<String, String> {
     let id_to_pid_map: BTreeMap<String, String> = file_paths
-        .par_iter()
+        .par_iter() // uses rayon's parallel iterator for performance
         .filter_map(|path_buf| {
             let path = path_buf.as_path();
             let key = parse_key_from_path(&path);
