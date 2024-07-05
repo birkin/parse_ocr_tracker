@@ -166,11 +166,10 @@ pub struct PathResults {
 pub fn process_files(
     ocr_tracker_filepaths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>,
 ) -> Result<PathResults, std::io::Error> {
-
     let results: Vec<Result<Record, PathBuf>> = ocr_tracker_filepaths
         .par_iter() // uses parallel iterator
         .map(|ocr_tracker_filepath_buf| {
-            let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();  // Path is simpler to work with than PathBuf
+            let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path(); // Path is simpler to work with than PathBuf
             let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath);
 
             // Read OCR tracker file contents
@@ -186,7 +185,9 @@ pub fn process_files(
                         Ok(mut rec) => {
                             // Look up PID and URL from hashmap
                             let pid = id_to_pid_map.get(&item_num_key).cloned();
-                            let url = pid.as_ref().map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
+                            let url = pid
+                                .as_ref()
+                                .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
                             rec.pid = pid;
                             rec.pid_url = url;
 
@@ -202,7 +203,7 @@ pub fn process_files(
                         }
                     }
                 }
-                Err(_) => Err(ocr_tracker_filepath_buf.clone())
+                Err(_) => Err(ocr_tracker_filepath_buf.clone()),
             }
         })
         .collect();
@@ -224,153 +225,6 @@ pub fn process_files(
         rejected_paths: temp_rejected_paths,
     })
 }
-
-
-
-
-// pub fn process_files(
-//     ocr_tracker_filepaths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>,
-// ) -> Result<PathResults, std::io::Error> {
-//     // Uses parallel iterator to process files concurrently
-//     let (temp_tracker_data_vector, temp_rejected_paths): (Vec<_>, Vec<_>) = ocr_tracker_filepaths
-//         .par_iter() // parallel iterator
-//         .map(|ocr_tracker_filepath_buf| {
-//             let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();
-//             let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath);
-
-//             // Read OCR data ----------------------------------------
-//             match File::open(&ocr_tracker_filepath)
-//                 .and_then(|mut file| {
-//                     let mut contents = String::new();
-//                     file.read_to_string(&mut contents)?;
-//                     Ok(contents)
-//                 })
-//                 .map_err(|e| e.to_string())
-//                 .and_then(|contents| serde_json::from_str::<Record>(&contents).map_err(|e| e.to_string()))
-//             {
-//                 Ok(mut rec) => {
-//                     // Look up PID and URL from hashmap -------------
-//                     let pid = id_to_pid_map.get(&item_num_key).cloned();
-//                     let url = pid
-//                         .as_ref()
-//                         .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
-//                     rec.pid = pid;
-//                     rec.pid_url = url;
-//                     Ok(rec)
-//                 }
-//                 Err(e) => {
-//                     log_debug!(
-//                         "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-//                         ocr_tracker_filepath,
-//                         e
-//                     );
-//                     Err(ocr_tracker_filepath_buf.clone())
-//                 }
-//             }
-//         })
-//         .partition_map(|result| match result {
-//             // Append record to data vector or reject path ----------
-//             Ok(rec) => Either::Left(rec),
-//             Err(path) => Either::Right(path),
-//         });
-
-//     // Return results
-//     Ok(PathResults {
-//         extracted_data_files: temp_tracker_data_vector,
-//         rejected_paths: temp_rejected_paths,
-//     })
-// }
-
-// pub fn process_files(
-//     ocr_tracker_filepaths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>,
-// ) -> Result<PathResults, std::io::Error> {
-//     let (temp_tracker_data_vector, temp_rejected_paths): (Vec<_>, Vec<_>) = ocr_tracker_filepaths
-//         .par_iter() // Using parallel iterator
-//         .map(|ocr_tracker_filepath_buf| {
-//             let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();
-//             let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath);
-
-//             match File::open(&ocr_tracker_filepath)
-//                 .and_then(|mut file| {
-//                     let mut contents = String::new();
-//                     file.read_to_string(&mut contents)?;
-//                     Ok(contents)
-//                 })
-//                 .map_err(|e| e.to_string())
-//                 .and_then(|contents| serde_json::from_str::<Record>(&contents).map_err(|e| e.to_string()))
-//             {
-//                 Ok(mut rec) => {
-//                     let pid = id_to_pid_map.get(&item_num_key).cloned();
-//                     let url = pid
-//                         .as_ref()
-//                         .map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
-//                     rec.pid = pid;
-//                     rec.pid_url = url;
-//                     Ok(rec)
-//                 }
-//                 Err(e) => {
-//                     log_debug!(
-//                         "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-//                         ocr_tracker_filepath,
-//                         e
-//                     );
-//                     Err(ocr_tracker_filepath_buf.clone())
-//                 }
-//             }
-//         })
-//         .partition_map(|result| match result {
-//             Ok(rec) => Either::Left(rec),
-//             Err(path) => Either::Right(path),
-//         });
-
-//     Ok(PathResults {
-//         extracted_data_files: temp_tracker_data_vector,
-//         rejected_paths: temp_rejected_paths,
-//     })
-// }
-
-// pub fn process_files(
-//     ocr_tracker_filepaths: Vec<PathBuf>, id_to_pid_map: &BTreeMap<String, String>,
-// ) -> Result<PathResults, std::io::Error> {
-//     // set up the vectors to hold the return-data -------------------
-//     let mut temp_tracker_data_vector: Vec<Record> = Vec::new();
-//     let mut temp_rejected_paths: Vec<PathBuf> = Vec::new();
-//     // loop through the ocr-tracker-files ---------------------------
-//     for ocr_tracker_filepath_buf in ocr_tracker_filepaths {
-//         let ocr_tracker_filepath: &Path = ocr_tracker_filepath_buf.as_path();
-//         let item_num_key: String = parse_key_from_path(&ocr_tracker_filepath); // get the key for the hashmap lookiup
-//                                                                                // read ocr-data --------------------------------------------
-//         let mut ocr_tracker_file_obj = File::open(&ocr_tracker_filepath)?;
-//         let mut ocr_tracker_contents = String::new();
-//         ocr_tracker_file_obj.read_to_string(&mut ocr_tracker_contents)?;
-//         let record: JsonResult<Record> = serde_json::from_str(&ocr_tracker_contents);
-//         match record {
-//             Ok(mut rec) => {
-//                 // look up pid and url from hashmap -----------------
-//                 let pid: Option<&String> = id_to_pid_map.get(&item_num_key);
-//                 let url: Option<String> =
-//                     pid.map(|p| format!(" https://repository.library.brown.edu/studio/item/{}/", p));
-//                 rec.pid = pid.cloned();
-//                 rec.pid_url = url;
-//                 // append record to data-vector ---------------------
-//                 temp_tracker_data_vector.push(rec);
-//             }
-//             Err(e) => {
-//                 log_debug!(
-//                     "error parsing ocr-json from ``{:?}``: ``{}`` -- likely an organization-file",
-//                     ocr_tracker_filepath,
-//                     e
-//                 );
-//                 temp_rejected_paths.push(ocr_tracker_filepath_buf);
-//             }
-//         }
-//     }
-
-//     Ok(PathResults {
-//         extracted_data_files: temp_tracker_data_vector,
-//         rejected_paths: temp_rejected_paths,
-//     })
-// } // end fn process_files()
 
 /*  -----------------------------------------------------------------
     Saves the data-vector to a CSV file.
