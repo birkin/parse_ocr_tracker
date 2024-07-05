@@ -1,6 +1,7 @@
 use crate::{log_debug, log_info}; // requires `logger` to be declared as `pub mod logger;` in `main.rs
 use indexmap::IndexMap;
 use rayon::prelude::*;
+use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Result as JsonResult, Value};
 use std::{
@@ -17,11 +18,41 @@ use walkdir::WalkDir;
     Note that the `pid` and `pid_url` fields are not part of the original JSON files; they're populated later.
     -----------------------------------------------------------------
 */
+
+// needed to handle the fact that what used to be integers are now sometimes dashes
+fn deserialize_i32_or_dash<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = Value::deserialize(deserializer)?;
+    if v == "-" {
+        Ok(0) // Or any default value you prefer
+    } else {
+        v.as_i64().map(|i| i as i32).ok_or_else(|| serde::de::Error::custom("expected an integer or '-'"))
+    }
+}
+
+// needed to handle the fact that what used to be floats are now sometimes dashes
+fn deserialize_f64_or_dash<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = Value::deserialize(deserializer)?;
+    if v == "-" {
+        Ok(0.0) // Or any default value you prefer
+    } else {
+        v.as_f64().ok_or_else(|| serde::de::Error::custom("expected a float or '-'"))
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Record {
+    #[serde(deserialize_with = "deserialize_i32_or_dash")]
     orientation: i32,
+    #[serde(deserialize_with = "deserialize_f64_or_dash")]
     orientation_conf: f64,
     script: String,
+    #[serde(deserialize_with = "deserialize_f64_or_dash")]
     script_conf: f64,
     image_name: String,
     word_count: i32,
@@ -32,6 +63,22 @@ pub struct Record {
     pid: Option<String>,     // populated later
     pid_url: Option<String>, // populated later
 }
+
+// #[derive(Debug, Deserialize, Serialize)]
+// pub struct Record {
+//     orientation: i32,
+//     orientation_conf: f64,
+//     script: String,
+//     script_conf: f64,
+//     image_name: String,
+//     word_count: i32,
+//     avg_confidence: f64,
+//     below_90: f64,
+//     below_60: f64,
+//     below_30: f64,
+//     pid: Option<String>,     // populated later
+//     pid_url: Option<String>, // populated later
+// }
 
 /*  -----------------------------------------------------------------
     Represents the structure of the -->ingestion<-- JSON tracker files that just have a pid.
